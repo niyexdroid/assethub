@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "PropMan",
+    "slug": "niyexdroid-prop-man",
+    "version": "1.0.0",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-asset",
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#12A376"
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.niyexdroid.propman",
+      "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json"
+    },
+    "ios": {
+      "bundleIdentifier": "com.niyexdroid.propman"
+    }
+  }
+}

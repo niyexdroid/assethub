@@ -1,0 +1,52 @@
+{
+  "name": "niyexdroid-prop-man-backend",
+  "version": "1.0.0",
+  "description": "Backend API for NiyexDroid Property Management — Nigerian proptech platform",
+  "scripts": {
+    "dev": "ts-node-dev --respawn src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "migrate": "./node_modules/.bin/ts-node src/database/migrate.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "zod": "^3.22.4",
+    "paystack": "^2.0.1",
+    "firebase-admin": "^12.0.0",
+    "axios": "^1.6.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.14.0",
+    "bullmq": "^5.1.1",
+    "ioredis": "^5.3.2",
+    "nodemailer": "^6.9.9",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "uuid": "^9.0.0",
+    "imagekit": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "@types/pg": "^8.10.9",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/pdfkit": "^0.13.4",
+    "@types/multer": "^1.4.11",
+    "@types/nodemailer": "^6.4.14",
+    "@types/uuid": "^9.0.7",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.1"
+  }
+}

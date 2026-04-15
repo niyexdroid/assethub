@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker stop:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(curl -s http://localhost:4000/health)",
+      "Bash(docker exec niyexdroid_api:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
