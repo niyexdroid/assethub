@@ -10,10 +10,26 @@ import { Input } from '../../../components/ui/Input';
 import { typography } from '../../../constants/typography';
 import { roommatesService } from '../../../services/roommates.service';
 
-const SLEEP_OPTIONS  = ['Early bird (before 10pm)', 'Night owl (after midnight)', 'Flexible'];
-const CLEAN_OPTIONS  = ['Very tidy', 'Tidy', 'Moderate', 'Relaxed'];
-const NOISE_OPTIONS  = ['Quiet', 'Moderate', 'Lively'];
-const GENDER_OPTIONS = ['Male', 'Female', 'Any'];
+const SLEEP_OPTIONS  = [
+  { label: 'Early Bird',  value: 'early_bird' },
+  { label: 'Night Owl',   value: 'night_owl'  },
+  { label: 'Flexible',    value: 'flexible'   },
+];
+const CLEAN_OPTIONS  = [
+  { label: 'Very Clean',  value: 'very_clean' },
+  { label: 'Clean',       value: 'clean'      },
+  { label: 'Relaxed',     value: 'relaxed'    },
+];
+const NOISE_OPTIONS  = [
+  { label: 'Quiet',       value: 'quiet'      },
+  { label: 'Moderate',    value: 'moderate'   },
+  { label: 'Lively',      value: 'lively'     },
+];
+const GENDER_OPTIONS = [
+  { label: 'Male',        value: 'male'       },
+  { label: 'Female',      value: 'female'     },
+  { label: 'Any',         value: 'any'        },
+];
 
 function OptionChip({ label, selected, onPress, theme }: { label: string; selected: boolean; onPress: () => void; theme: any }) {
   return (
@@ -48,14 +64,10 @@ export default function RoommateProfileScreen() {
       if (profile) {
         setBudget(String(profile.budget_max ?? ''));
         setBio(profile.bio ?? '');
-        setGender(profile.gender_preference ?? 'Any');
-        const lifestyle: string[] = profile.lifestyle ?? [];
-        const s = lifestyle.find(l => SLEEP_OPTIONS.includes(l));
-        const c = lifestyle.find(l => CLEAN_OPTIONS.includes(l));
-        const n = lifestyle.find(l => NOISE_OPTIONS.includes(l));
-        if (s) setSleep(s);
-        if (c) setClean(c);
-        if (n) setNoise(n);
+        setGender(profile.gender_preference ?? profile.gender ?? 'any');
+        if (profile.sleep_schedule)  setSleep(profile.sleep_schedule);
+        if (profile.cleanliness)     setClean(profile.cleanliness);
+        if (profile.noise_tolerance) setNoise(profile.noise_tolerance);
       }
     }).catch(() => {}).finally(() => setInitialLoading(false));
   }, []);
@@ -63,16 +75,19 @@ export default function RoommateProfileScreen() {
   const onSave = async () => {
     setLoading(true);
     try {
-      const lifestyle = [sleep, clean, noise].filter(Boolean);
       await roommatesService.upsertProfile({
         budget_min: 0,
         budget_max: budget ? Number(budget) : 0,
-        gender_preference: gender,
-        lifestyle,
-        bio: bio || null,
+        gender_preference: gender as any,
+        sleep_schedule:    sleep   as any || undefined,
+        cleanliness:       clean   as any || undefined,
+        noise_tolerance:   noise   as any || undefined,
+        bio: bio || undefined,
         is_active: true,
       });
-      router.back();
+      Alert.alert('Profile Saved', 'Your roommate profile has been updated.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message ?? 'Could not save profile.');
     } finally {
@@ -120,7 +135,7 @@ export default function RoommateProfileScreen() {
         <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.section}>
           <Text style={[typography.label, { color: theme.textMuted, marginBottom: 10 }]}>ROOMMATE GENDER PREFERENCE</Text>
           <View style={styles.chips}>
-            {GENDER_OPTIONS.map(g => <OptionChip key={g} label={g} selected={gender === g} onPress={() => setGender(g)} theme={theme} />)}
+            {GENDER_OPTIONS.map(g => <OptionChip key={g.value} label={g.label} selected={gender === g.value} onPress={() => setGender(g.value)} theme={theme} />)}
           </View>
         </Animated.View>
 
@@ -131,7 +146,7 @@ export default function RoommateProfileScreen() {
             <Text style={[typography.label, { color: theme.textMuted }]}>SLEEP SCHEDULE</Text>
           </View>
           <View style={styles.chips}>
-            {SLEEP_OPTIONS.map(s => <OptionChip key={s} label={s} selected={sleep === s} onPress={() => setSleep(s)} theme={theme} />)}
+            {SLEEP_OPTIONS.map(s => <OptionChip key={s.value} label={s.label} selected={sleep === s.value} onPress={() => setSleep(s.value)} theme={theme} />)}
           </View>
         </Animated.View>
 
@@ -142,7 +157,7 @@ export default function RoommateProfileScreen() {
             <Text style={[typography.label, { color: theme.textMuted }]}>CLEANLINESS</Text>
           </View>
           <View style={styles.chips}>
-            {CLEAN_OPTIONS.map(c => <OptionChip key={c} label={c} selected={clean === c} onPress={() => setClean(c)} theme={theme} />)}
+            {CLEAN_OPTIONS.map(c => <OptionChip key={c.value} label={c.label} selected={clean === c.value} onPress={() => setClean(c.value)} theme={theme} />)}
           </View>
         </Animated.View>
 
@@ -153,7 +168,7 @@ export default function RoommateProfileScreen() {
             <Text style={[typography.label, { color: theme.textMuted }]}>NOISE LEVEL</Text>
           </View>
           <View style={styles.chips}>
-            {NOISE_OPTIONS.map(n => <OptionChip key={n} label={n} selected={noise === n} onPress={() => setNoise(n)} theme={theme} />)}
+            {NOISE_OPTIONS.map(n => <OptionChip key={n.value} label={n.label} selected={noise === n.value} onPress={() => setNoise(n.value)} theme={theme} />)}
           </View>
         </Animated.View>
 

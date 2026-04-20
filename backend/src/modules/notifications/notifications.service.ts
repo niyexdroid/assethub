@@ -101,7 +101,7 @@ export class NotificationsService {
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#12A376 0%,#0A6E4E 100%);padding:32px 40px;text-align:center">
-            <div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:1px">🏠 PropMan</div>
+            <div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:1px">🏠 AssetHub</div>
             <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px">Property Management Platform</div>
           </td>
         </tr>
@@ -119,7 +119,7 @@ export class NotificationsService {
 
             <p style="margin:0;font-size:13px;color:#888;line-height:1.6">
               🔒 Never share this code with anyone.<br>
-              PropMan staff will <strong>never</strong> ask for your verification code.
+              AssetHub staff will <strong>never</strong> ask for your verification code.
             </p>
           </td>
         </tr>
@@ -131,7 +131,7 @@ export class NotificationsService {
         <tr>
           <td style="padding:20px 40px;text-align:center">
             <p style="margin:0;font-size:12px;color:#bbb">If you didn't request this code, you can safely ignore this email.</p>
-            <p style="margin:8px 0 0;font-size:12px;color:#ccc">© ${new Date().getFullYear()} PropMan · Nigerian Property Management</p>
+            <p style="margin:8px 0 0;font-size:12px;color:#ccc">© ${new Date().getFullYear()} AssetHub · Nigerian Property Management</p>
           </td>
         </tr>
 
@@ -141,7 +141,7 @@ export class NotificationsService {
 </body>
 </html>`;
 
-    const result = await sendEmail(email, 'Your PropMan verification code', html);
+    const result = await sendEmail(email, 'Your AssetHub verification code', html);
 
     try {
       await pool.query(

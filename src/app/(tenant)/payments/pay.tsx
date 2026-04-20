@@ -48,9 +48,9 @@ export default function PayScreen() {
 
   const handleNavChange = useCallback((navState: { url: string }) => {
     const url = navState.url;
-    if (url.includes('propman://payment/success') || url.includes('/payment/callback?status=success') || url.includes('paystack.com/close')) {
+    if (url.includes('assethub://payment/success') || url.includes('/payment/callback?status=success') || url.includes('paystack.com/close')) {
       setStatus('success');
-    } else if (url.includes('propman://payment/failed') || url.includes('/payment/callback?status=failed')) {
+    } else if (url.includes('assethub://payment/failed') || url.includes('/payment/callback?status=failed')) {
       setStatus('failed');
     }
   }, []);

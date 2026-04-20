@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { TenanciesService } from './tenancies.service';
-import { createTenancySchema, signSchema } from './tenancies.validators';
+import { createTenancySchema, signSchema, applySchema, rejectApplicationSchema } from './tenancies.validators';
 import { z } from 'zod';
 
 const svc = new TenanciesService();
@@ -72,5 +72,41 @@ export async function signLandlord(req: Request, res: Response, next: NextFuncti
   try {
     signSchema.parse(req.body);
     res.json(await svc.sign(req.params.id, req.user!.id, 'landlord'));
+  } catch (err) { return next(err); }
+}
+
+// ── Applications ─────────────────────────────────────────────────────────────
+
+export async function apply(req: Request, res: Response, next: NextFunction) {
+  try {
+    const input = applySchema.parse(req.body);
+    res.status(201).json(await svc.apply(req.user!.id, input));
+  } catch (err) { return next(err); }
+}
+
+export async function getMyApplications(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(await svc.getApplicationsForTenant(req.user!.id));
+  } catch (err) { return next(err); }
+}
+
+export async function getReceivedApplications(req: Request, res: Response, next: NextFunction) {
+  try {
+    const propertyId = req.query.property_id as string | undefined;
+    res.json(await svc.getApplicationsForLandlord(req.user!.id, propertyId));
+  } catch (err) { return next(err); }
+}
+
+export async function approveApplication(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(await svc.approveApplication(req.params.id, req.user!.id));
+  } catch (err) { return next(err); }
+}
+
+export async function rejectApplication(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { reason } = rejectApplicationSchema.parse(req.body);
+    await svc.rejectApplication(req.params.id, req.user!.id, reason);
+    res.json({ ok: true });
   } catch (err) { return next(err); }
 }

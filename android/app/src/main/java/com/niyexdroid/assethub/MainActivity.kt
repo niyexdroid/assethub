@@ -1,4 +1,4 @@
-package com.niyexdroid.propman
+package com.niyexdroid.assethub
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

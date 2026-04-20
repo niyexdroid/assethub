@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, interpolate,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,6 +12,7 @@ import { Badge }  from '../../../components/ui/Badge';
 import { Card }   from '../../../components/ui/Card';
 import { typography } from '../../../constants/typography';
 import { propertiesService, Property } from '../../../services/properties.service';
+import { PhotoCarousel } from '../../../components/property/PhotoCarousel';
 
 const { width, height } = Dimensions.get('window');
 const IMG_HEIGHT = height * 0.45;
@@ -92,16 +92,7 @@ export default function PropertyDetailScreen() {
 
       <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
 
-        {/* Hero image */}
-        <View style={styles.imageContainer}>
-          {p.photos?.[0]
-            ? <Image source={{ uri: p.photos[0] }} style={styles.heroImage} resizeMode="cover" />
-            : <View style={[styles.heroImage, { backgroundColor: theme.surfaceRaised, alignItems: 'center', justifyContent: 'center' }]}>
-                <Ionicons name="home-outline" size={72} color={theme.textMuted} />
-              </View>
-          }
-          <LinearGradient colors={['transparent', theme.background]} style={styles.imageGradient} />
-        </View>
+        <PhotoCarousel photos={p.photos ?? []} height={IMG_HEIGHT} gradientEnd={theme.background} />
 
         {/* Content */}
         <View style={[styles.content, { backgroundColor: theme.background }]}>
@@ -199,24 +190,23 @@ export default function PropertyDetailScreen() {
             </Animated.View>
           )}
 
-          <View style={{ height: 100 }} />
+          {/* CTA */}
+          <View style={[styles.cta, { borderTopColor: theme.border }]}>
+            <View style={styles.ctaFees}>
+              <Text style={[typography.caption, { color: theme.textMuted }]}>Agency fee</Text>
+              <Text style={[typography.label, { color: theme.textPrimary }]}>{'\u20A6'}{(p.agency_fee ?? 0).toLocaleString()}</Text>
+            </View>
+            <Button
+              title="Apply Now"
+              onPress={() => router.push({ pathname: '/(tenant)/apply/[propertyId]', params: { propertyId: p.id } })}
+              size="lg"
+              style={{ flex: 1, marginLeft: 16 }}
+            />
+          </View>
+
+          <View style={{ height: insets.bottom + 100 }} />
         </View>
       </Animated.ScrollView>
-
-      {/* Sticky CTA */}
-      <Animated.View entering={FadeInDown.delay(300).springify()}
-        style={[styles.cta, { backgroundColor: theme.background, borderTopColor: theme.border, paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.ctaFees}>
-          <Text style={[typography.caption, { color: theme.textMuted }]}>Agency fee</Text>
-          <Text style={[typography.label, { color: theme.textPrimary }]}>{'\u20A6'}{(p.agency_fee ?? 0).toLocaleString()}</Text>
-        </View>
-        <Button
-          title="Apply Now"
-          onPress={() => router.push({ pathname: '/(tenant)/tenancy', params: { property_id: p.id } })}
-          size="lg"
-          style={{ flex: 1, marginLeft: 16 }}
-        />
-      </Animated.View>
     </View>
   );
 }
@@ -225,9 +215,6 @@ const styles = StyleSheet.create({
   floatingHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 20, paddingBottom: 12, alignItems: 'center', justifyContent: 'flex-end', height: 80 },
   topButtons:     { position: 'absolute', left: 20, right: 20, zIndex: 20, flexDirection: 'row', justifyContent: 'space-between' },
   circleBtn:      { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  imageContainer: { height: IMG_HEIGHT },
-  heroImage:      { width, height: IMG_HEIGHT },
-  imageGradient:  { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120 },
   content:        { paddingHorizontal: 20, paddingTop: 20, gap: 20 },
   row:            { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   priceRow:       { flexDirection: 'row', gap: 12 },
@@ -239,6 +226,6 @@ const styles = StyleSheet.create({
   amenityPill:    { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   landlordCard:   { flexDirection: 'row', alignItems: 'center' },
   avatar:         { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  cta:            { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth },
+  cta:            { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth },
   ctaFees:        { gap: 2 },
 });

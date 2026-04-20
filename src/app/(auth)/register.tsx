@@ -57,7 +57,7 @@ export default function RegisterScreen() {
           </LinearGradient>
           <Text style={[typography.h2, { color: theme.textPrimary, marginTop: 20 }]}>Create account</Text>
           <Text style={[typography.body, { color: theme.textSecondary, marginTop: 4 }]}>
-            Join thousands of Lagosians on PropMan
+            Join thousands of Lagosians on AssetHub
           </Text>
         </Animated.View>
 

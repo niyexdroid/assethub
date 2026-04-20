@@ -81,6 +81,7 @@ export default function TenantLayout() {
       <Tabs.Screen name="payments/receipt"      options={{ href: null }} />
       <Tabs.Screen name="roommates/profile"     options={{ href: null }} />
       <Tabs.Screen name="roommates/requests"    options={{ href: null }} />
+      <Tabs.Screen name="apply/[propertyId]"    options={{ href: null }} />
     </Tabs>
   );
 }

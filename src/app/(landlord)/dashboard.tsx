@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,7 +56,7 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const activeTenancies = tenancies.filter(t => t.status === 'active');
   const pendingTenancies = tenancies.filter(t => t.status === 'pending');
@@ -131,9 +132,9 @@ export default function DashboardScreen() {
               <View style={[styles.statIconWrap, { backgroundColor: s.color + '18' }]}>
                 <Ionicons name={s.icon} size={20} color={s.color} />
               </View>
-              <Text style={[typography.h3, { color: theme.textPrimary, marginTop: 10 }]}>{loading ? '...' : s.value}</Text>
-              <Text style={[typography.caption, { color: theme.textMuted, marginTop: 2 }]}>{s.label}</Text>
-              <Text style={[typography.caption, { color: theme.textMuted }]}>{loading ? '' : s.sub}</Text>
+              <Text style={[typography.h3, { color: s.color, marginTop: 10 }]}>{loading ? '...' : s.value}</Text>
+              <Text style={[typography.caption, { color: theme.textPrimary, marginTop: 2 }]}>{s.label}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{loading ? '' : s.sub}</Text>
             </Card>
           </Animated.View>
         ))}

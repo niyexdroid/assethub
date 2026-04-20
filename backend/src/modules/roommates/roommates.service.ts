@@ -24,7 +24,7 @@ export class RoommatesService {
       [
         tenantId,
         input.property_id ?? null,
-        input.gender,
+        input.gender_preference ?? input.gender ?? null,
         input.age_range_min ?? null,
         input.age_range_max ?? null,
         input.school ?? null,

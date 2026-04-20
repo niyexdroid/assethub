@@ -26,7 +26,7 @@ export const useThemeStore = create<ThemeStore>()(
       },
     }),
     {
-      name:    'propman-theme',
+      name:    'assethub-theme',
       storage: createJSONStorage(() => AsyncStorage),
       // Only persist mode — rehydrate theme object on load
       partialize: (state) => ({ mode: state.mode }),

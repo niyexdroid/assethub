@@ -40,7 +40,7 @@ export default function Login() {
               <Building2 size={24} className="text-white" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">PropMan</p>
+              <p className="text-xl font-bold text-gray-900">AssetHub</p>
               <p className="text-sm text-gray-500">Admin Portal</p>
             </div>
           </div>

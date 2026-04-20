@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Input }  from '../../components/ui/Input';
 import { typography } from '../../constants/typography';
 import { authService } from '../../services/auth.service';
+import { getErrorMessage } from '../../services/api';
 import { useAuthStore } from '../../store/auth.store';
 import { LoginRequest } from '../../types/auth';
 
@@ -36,7 +37,7 @@ export default function LoginScreen() {
         router.replace('/(tenant)/home');
       }
     } catch (error: any) {
-      const message = error?.response?.data?.message ?? 'Login failed. Please try again.';
+      const message = getErrorMessage(error);
       Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
@@ -67,7 +68,7 @@ export default function LoginScreen() {
         router.replace('/(tenant)/home');
       }
     } catch (error: any) {
-      const message = error?.response?.data?.message ?? 'Login failed. Please try again.';
+      const message = getErrorMessage(error);
       Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
@@ -90,7 +91,7 @@ export default function LoginScreen() {
             Welcome back
           </Text>
           <Text style={[typography.body, { color: theme.textSecondary, marginTop: 4 }]}>
-            Sign in to your PropMan account
+            Sign in to your AssetHub account
           </Text>
         </Animated.View>
 

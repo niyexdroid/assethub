@@ -15,8 +15,8 @@ export default function Properties() {
   const load = async () => {
     setLoading(true);
     try {
-      const url = tab === 'pending' ? '/admin/properties/pending' : '/admin/users'; // use users as fallback
-      const res = await api.get(tab === 'pending' ? '/admin/properties/pending' : '/properties/landlord/mine');
+      const url = tab === 'pending' ? '/admin/properties/pending' : '/admin/properties';
+      const res = await api.get(url);
       setProperties(Array.isArray(res.data) ? res.data : []);
     } catch { setProperties([]); }
     setLoading(false);

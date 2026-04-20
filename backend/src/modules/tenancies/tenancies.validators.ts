@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+export const applySchema = z.object({
+  property_id:  z.string().uuid(),
+  tenancy_type: z.enum(['monthly', 'yearly']),
+  move_in_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format: YYYY-MM-DD'),
+  message:      z.string().max(500).optional(),
+});
+
+export const rejectApplicationSchema = z.object({
+  reason: z.string().min(5),
+});
+
+export type ApplyInput = z.infer<typeof applySchema>;
+
 export const createTenancySchema = z.object({
   property_id:    z.string().uuid(),
   tenant_id:      z.string().uuid(),

@@ -56,6 +56,15 @@ export async function listPendingProperties(req: Request, res: Response, next: N
   } catch (err) { return next(err); }
 }
 
+export async function listAllProperties(req: Request, res: Response, next: NextFunction) {
+  try {
+    const page   = Number(req.query.page)   || 1;
+    const limit  = Number(req.query.limit)  || 50;
+    const status = req.query.status as string | undefined;
+    res.json(await svc.listAllProperties(page, limit, status));
+  } catch (err) { return next(err); }
+}
+
 export async function approveProperty(req: Request, res: Response, next: NextFunction) {
   try {
     await svc.approveProperty(req.params.id, req.user!.id);

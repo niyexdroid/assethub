@@ -72,9 +72,10 @@ export default function LandlordLayout() {
       {TABS.map(t => <Tabs.Screen key={t.name} name={t.name} />)}
 
       {/* Detail / flow screens — hidden from tab bar */}
-      <Tabs.Screen name="listings/create"  options={{ href: null }} />
-      <Tabs.Screen name="listings/[id]"    options={{ href: null }} />
-      <Tabs.Screen name="complaints/[id]"  options={{ href: null }} />
+      <Tabs.Screen name="listings/create"     options={{ href: null }} />
+      <Tabs.Screen name="listings/[id]"       options={{ href: null }} />
+      <Tabs.Screen name="complaints/[id]"     options={{ href: null }} />
+      <Tabs.Screen name="applications"          options={{ href: null }} />
     </Tabs>
   );
 }

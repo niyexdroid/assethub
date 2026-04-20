@@ -9,7 +9,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { complaintsService, Complaint, ComplaintMessage } from '../../../services/complaints.service';
 
-const SENDER_LABELS: Record<string, string> = { tenant: 'You', landlord: 'Landlord', admin: 'PropMan Admin' };
+const SENDER_LABELS: Record<string, string> = { tenant: 'You', landlord: 'Landlord', admin: 'AssetHub Admin' };
 
 const STATUS_BADGE: Record<string, { variant: 'danger' | 'warning' | 'success' | 'info'; label: string }> = {
   open:        { variant: 'danger',  label: 'Open'        },

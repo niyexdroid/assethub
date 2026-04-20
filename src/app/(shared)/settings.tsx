@@ -292,7 +292,7 @@ export default function SettingsScreen() {
 
         <Animated.View entering={FadeInDown.delay(340).springify()}>
           <Text style={[typography.caption, { color: theme.textMuted, textAlign: 'center', marginTop: 8 }]}>
-            PropMan v1.0.0 · Built in Lagos
+            AssetHub v1.0.0 · Built in Lagos
           </Text>
         </Animated.View>
       </ScrollView>

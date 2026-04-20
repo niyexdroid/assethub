@@ -12,6 +12,8 @@ export type NotificationType =
   | 'kyc_rejected'
   | 'listing_approved'
   | 'listing_rejected'
+  | 'new_application'
+  | 'application_rejected'
   | 'otp';
 
 export interface NotificationPayload {

@@ -13,15 +13,16 @@ interface Props {
 }
 
 export function Card({ children, onPress, style, padding = 16, radius = 16, glow }: Props) {
-  const { theme } = useTheme();
-  const scale     = useSharedValue(1);
+  const { theme, isDark } = useTheme();
+  const scale             = useSharedValue(1);
 
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const glowStyle = glow === 'green'
-    ? { shadowColor: theme.primaryLight, shadowOpacity: 0.25, shadowRadius: 12, elevation: 8 }
-    : glow === 'gold'
-    ? { shadowColor: theme.accent,       shadowOpacity: 0.25, shadowRadius: 12, elevation: 8 }
+  const glowColor = glow === 'green' ? theme.primaryLight : glow === 'gold' ? theme.accent : undefined;
+  const glowStyle = glowColor
+    ? isDark
+      ? { borderColor: glowColor + '55', borderWidth: 1 }
+      : { shadowColor: glowColor, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 }
     : {};
 
   const inner = (
@@ -49,5 +50,5 @@ export function Card({ children, onPress, style, padding = 16, radius = 16, glow
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: StyleSheet.hairlineWidth, shadowOffset: { width: 0, height: 4 } },
+  card: { borderWidth: StyleSheet.hairlineWidth },
 });

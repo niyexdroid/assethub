@@ -71,12 +71,12 @@ export async function generateAgreementPdf(data: AgreementData): Promise<Buffer>
     doc.fontSize(12).font('Helvetica-Bold').text('STANDARD CLAUSES');
     doc.moveDown(0.3);
     doc.fontSize(9).font('Helvetica').text(
-      '1. The tenant shall pay rent on or before the due date as scheduled on the PropMan platform.\n' +
+      '1. The tenant shall pay rent on or before the due date as scheduled on the AssetHub platform.\n' +
       '2. The tenant shall keep the property clean and in good repair.\n' +
       '3. The tenant shall not sublet without written landlord consent.\n' +
       '4. The caution fee is refundable at the end of tenancy subject to property condition.\n' +
       '5. Either party may terminate this agreement with 30 days written notice.\n' +
-      '6. All disputes shall be resolved through the PropMan platform dispute resolution process.\n' +
+      '6. All disputes shall be resolved through the AssetHub platform dispute resolution process.\n' +
       '7. This agreement is governed by Nigerian law.'
     );
     doc.moveDown(2);

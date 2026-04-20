@@ -73,7 +73,7 @@ coverage/
 # ── Firebase ──────────────────────────────────────────────────────────────────
 google-services.json
 GoogleService-Info.plist
-propman_firebase_config.json
+assethub_firebase_config.json
 *firebase*adminsdk*.json
 
 # ── Docker ────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-package com.niyexdroid.propman
+package com.niyexdroid.assethub
 
 import android.app.Application
 import android.content.res.Configuration

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
 import { Badge }  from '../../../components/ui/Badge';
@@ -43,10 +44,19 @@ export default function TenanciesScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.primary} />}
     >
       <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.header}>
-        <Text style={[typography.h2, { color: theme.textPrimary }]}>Tenancies</Text>
-        <Text style={[typography.small, { color: theme.textMuted }]}>
-          {loading ? '...' : `${tenancies.filter(t => t.status === 'active').length} active`}
-        </Text>
+        <View>
+          <Text style={[typography.h2, { color: theme.textPrimary }]}>Tenancies</Text>
+          <Text style={[typography.small, { color: theme.textMuted }]}>
+            {loading ? '...' : `${tenancies.filter(t => t.status === 'active').length} active`}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/(landlord)/applications' as any)}
+          style={[styles.appsBtn, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '40' }]}
+        >
+          <Ionicons name="people-outline" size={16} color={theme.primary} />
+          <Text style={[typography.small, { color: theme.primary, fontWeight: '600' }]}>Applications</Text>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* Filter */}
@@ -88,7 +98,7 @@ export default function TenanciesScreen() {
                         {t.property?.title ?? t.property_id}
                       </Text>
                       <Text style={[typography.small, { color: theme.primaryLight, fontWeight: '600', marginTop: 2 }]}>
-                        ₦{t.monthly_rent.toLocaleString('en-NG')}/mo
+                        ₦{(t.monthly_rent ?? t.yearly_amount ?? t.monthly_amount ?? 0).toLocaleString('en-NG')}/mo
                       </Text>
                     </View>
                     <Badge label={t.status} variant={statusVariant} dot />
@@ -120,7 +130,8 @@ export default function TenanciesScreen() {
 
 const styles = StyleSheet.create({
   container:  { padding: 20 },
-  header:     { marginBottom: 20 },
+  header:     { marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  appsBtn:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   filterTab:  { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   card:       { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   cardTop:    { flexDirection: 'row', alignItems: 'center', padding: 14 },

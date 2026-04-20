@@ -38,13 +38,15 @@ export default function RoommatesScreen() {
   const [propertyId, setPropertyId] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [sending, setSending]   = useState<string | null>(null);
+  const [hasProfile, setHasProfile] = useState(false);
 
   const load = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const [tenancies, received] = await Promise.allSettled([
+      const [tenancies, received, profile] = await Promise.allSettled([
         tenanciesService.getTenantTenancies(),
         roommatesService.getReceivedRequests(),
+        roommatesService.getProfile(),
       ]);
 
       let propId = propertyId;
@@ -54,6 +56,9 @@ export default function RoommatesScreen() {
       }
       if (received.status === 'fulfilled') {
         setPendingCount(received.value.filter(r => r.status === 'pending').length);
+      }
+      if (profile.status === 'fulfilled' && profile.value) {
+        setHasProfile(true);
       }
 
       if (propId) {
@@ -107,17 +112,19 @@ export default function RoommatesScreen() {
       </Animated.View>
 
       {/* Setup CTA */}
-      <Animated.View entering={FadeInDown.delay(60).springify()}>
-        <LinearGradient colors={theme.primaryGrad} style={styles.setupCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={[typography.bodyMed, { color: '#fff' }]}>Complete your profile</Text>
-            <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)', marginTop: 2 }]}>
-              Get better matches with a full profile
-            </Text>
-          </View>
-          <Button title="Update" onPress={() => router.push('/(tenant)/roommates/profile')} variant="secondary" size="sm" />
-        </LinearGradient>
-      </Animated.View>
+      {!hasProfile && (
+        <Animated.View entering={FadeInDown.delay(60).springify()}>
+          <LinearGradient colors={theme.primaryGrad} style={styles.setupCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.bodyMed, { color: '#fff' }]}>Complete your profile</Text>
+              <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)', marginTop: 2 }]}>
+                Get better matches with a full profile
+              </Text>
+            </View>
+            <Button title="Update" onPress={() => router.push('/(tenant)/roommates/profile')} variant="secondary" size="sm" />
+          </LinearGradient>
+        </Animated.View>
+      )}
 
       {/* Legend */}
       <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.legendRow}>

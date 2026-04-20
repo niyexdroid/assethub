@@ -82,4 +82,35 @@ export const tenanciesService = {
   signAsLandlord: async (id: string): Promise<void> => {
     await api.post(API_ENDPOINTS.tenancies.signLandlord(id));
   },
+
+  apply: async (data: {
+    property_id: string;
+    tenancy_type: 'monthly' | 'yearly';
+    move_in_date: string;
+    message?: string;
+  }) => {
+    const res = await api.post(API_ENDPOINTS.tenancies.apply, data);
+    return res.data;
+  },
+
+  getMyApplications: async () => {
+    const res = await api.get(API_ENDPOINTS.tenancies.myApplications);
+    return res.data;
+  },
+
+  getReceivedApplications: async (propertyId?: string) => {
+    const res = await api.get(API_ENDPOINTS.tenancies.receivedApplications, {
+      params: propertyId ? { property_id: propertyId } : undefined,
+    });
+    return res.data;
+  },
+
+  approveApplication: async (id: string) => {
+    const res = await api.put(API_ENDPOINTS.tenancies.approveApplication(id));
+    return res.data;
+  },
+
+  rejectApplication: async (id: string, reason: string) => {
+    await api.put(API_ENDPOINTS.tenancies.rejectApplication(id), { reason });
+  },
 };

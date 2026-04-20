@@ -1,25 +1,27 @@
+name: assethub
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: propman_postgres
+    container_name: assethub_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-niyexdroid}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
-      POSTGRES_DB: ${POSTGRES_DB:-niyexdroid_propman}
+      POSTGRES_DB: ${POSTGRES_DB:-niyexdroid_assethub}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-niyexdroid} -d ${POSTGRES_DB:-niyexdroid_propman}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-niyexdroid} -d ${POSTGRES_DB:-niyexdroid_assethub}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: propman_redis
+    container_name: assethub_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -36,7 +38,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: propman_api
+    container_name: assethub_api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -46,12 +48,25 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-niyexdroid}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-niyexdroid_propman}
+      DATABASE_URL: postgres://${POSTGRES_USER:-niyexdroid}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-niyexdroid_assethub}
       REDIS_URL: redis://redis:6379
     ports:
       - "4000:4000"
     volumes:
       - ./backend/src:/app/src
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: assethub_admin
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:4000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./admin/src:/app/src
 
 volumes:
   postgres_data:

@@ -35,7 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Building2 size={16} className="text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">PropMan</p>
+              <p className="text-sm font-bold text-gray-900">AssetHub</p>
               <p className="text-xs text-gray-400">Admin Panel</p>
             </div>
           </div>

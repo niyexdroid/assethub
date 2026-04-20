@@ -14,7 +14,7 @@ const schema = z.object({
   PAYSTACK_SECRET_KEY:   z.string(),
   PAYSTACK_PUBLIC_KEY:   z.string(),
   SENDCHAMP_API_KEY:        z.string(),
-  SENDCHAMP_SENDER_NAME:    z.string().default('PropMan'),
+  SENDCHAMP_SENDER_NAME:    z.string().default('AssetHub'),
   SENDCHAMP_WHATSAPP_NUMBER: z.string(),
   FIREBASE_PROJECT_ID:   z.string(),
   FIREBASE_CLIENT_EMAIL: z.string(),

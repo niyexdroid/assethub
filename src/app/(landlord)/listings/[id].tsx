@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, interpolate,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,9 +13,11 @@ import { Badge }  from '../../../components/ui/Badge';
 import { Card }   from '../../../components/ui/Card';
 import { typography } from '../../../constants/typography';
 import { propertiesService, Property } from '../../../services/properties.service';
+import { PhotoCarousel } from '../../../components/property/PhotoCarousel';
 
 const { width, height } = Dimensions.get('window');
 const IMG_HEIGHT = height * 0.38;
+
 
 export default function LandlordListingDetailScreen() {
   const { theme, isDark } = useTheme();
@@ -126,16 +128,7 @@ export default function LandlordListingDetailScreen() {
 
       <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
 
-        {/* Hero image */}
-        <View style={styles.imageContainer}>
-          {p.photos?.[0]
-            ? <Image source={{ uri: p.photos[0] }} style={styles.heroImage} resizeMode="cover" />
-            : <View style={[styles.heroImage, { backgroundColor: theme.surfaceRaised, alignItems: 'center', justifyContent: 'center' }]}>
-                <Ionicons name="home-outline" size={72} color={theme.textMuted} />
-              </View>
-          }
-          <LinearGradient colors={['transparent', theme.background]} style={styles.imageGradient} />
-        </View>
+        <PhotoCarousel photos={p.photos ?? []} height={IMG_HEIGHT} gradientEnd={theme.background} />
 
         {/* Content */}
         <View style={[styles.content, { backgroundColor: theme.background }]}>

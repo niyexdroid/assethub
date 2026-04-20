@@ -96,6 +96,20 @@ export class AdminService {
     return rows;
   }
 
+  async listAllProperties(page = 1, limit = 50, status?: string) {
+    const offset = (page - 1) * limit;
+    const where  = status ? `WHERE p.approval_status = '${status}'` : '';
+    const { rows } = await pool.query(
+      `SELECT p.*, u.first_name AS landlord_first, u.last_name AS landlord_last, u.phone_number
+       FROM properties p
+       JOIN users u ON u.id = p.landlord_id
+       ${where}
+       ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    return rows;
+  }
+
   async approveProperty(propertyId: string, adminId: string) {
     const { rows } = await pool.query(
       `UPDATE properties SET approval_status = 'approved', updated_at = NOW()
@@ -175,7 +189,7 @@ export class AdminService {
       await notifSvc.send({
         userId: uid, type: 'complaint_update',
         title: 'Complaint Resolved by Admin',
-        body:  'Your complaint has been resolved by the PropMan support team.',
+        body:  'Your complaint has been resolved by the AssetHub support team.',
         channels: ['whatsapp', 'push'],
       });
     }

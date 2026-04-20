@@ -19,6 +19,7 @@ router.put('/kyc/:userId/reject',     ctrl.rejectKyc);
 
 // Properties
 router.get('/properties/pending',     ctrl.listPendingProperties);
+router.get('/properties',             ctrl.listAllProperties);
 router.put('/properties/:id/approve', ctrl.approveProperty);
 router.put('/properties/:id/reject',  ctrl.rejectProperty);
 router.put('/properties/:id/suspend', ctrl.suspendProperty);

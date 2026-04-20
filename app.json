@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PropMan",
-    "slug": "niyexdroid-prop-man",
+    "name": "AssetHub",
+    "slug": "niyexdroid-asset-hub",
     "version": "1.0.0",
     "newArchEnabled": true,
     "plugins": [
@@ -17,12 +17,13 @@
       ]
     ],
     "android": {
-      "package": "com.niyexdroid.propman",
+      "package": "com.niyexdroid.assethub",
       "softwareKeyboardLayoutMode": "resize",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true
     },
     "ios": {
-      "bundleIdentifier": "com.niyexdroid.propman"
+      "bundleIdentifier": "com.niyexdroid.assethub"
     }
   }
 }

@@ -6,7 +6,12 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
       "Bash(curl -s http://localhost:4000/health)",
       "Bash(docker exec niyexdroid_api:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(ipconfig)",
+      "Bash(docker port:*)",
+      "Bash(curl:*)",
+      "Bash(sed -i 's/APP_NAME=NiyexDroid PropMan/APP_NAME=NiyexDroid AssetHub/' \"C:/dev/propman/backend/.env\")",
+      "Bash(sed -i 's/niyexdroid_propman/niyexdroid_assethub/g' \"C:/dev/propman/backend/.env\")"
     ]
   }
 }

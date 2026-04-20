@@ -151,7 +151,11 @@ export default function CreateListingScreen() {
         await propertiesService.addPhotos(propertyId, files);
       }
 
-      router.back();
+      Alert.alert(
+        isEdit ? 'Listing Updated' : 'Listing Published',
+        isEdit ? 'Your changes have been saved.' : 'Your property is now live.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? e?.message ?? 'Could not save listing.';
       Alert.alert('Error', msg);

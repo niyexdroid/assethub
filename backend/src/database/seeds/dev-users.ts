@@ -4,6 +4,7 @@
  *
  * Tenant  → phone: 08100000001  password: passwordtn
  * Landlord → phone: 08100000002  password: passwordld
+ * Admin    → phone: 08100000003  password: passwordad
  */
 
 import bcrypt from 'bcryptjs';
@@ -27,6 +28,15 @@ async function seed() {
       last_name:     'Landlord',
       password:      'passwordld',
       role:          'landlord',
+      is_verified:   true,
+      is_active:     true,
+    },
+    {
+      phone_number:  '08100000003',
+      first_name:    'Test',
+      last_name:     'Admin',
+      password:      'passwordad',
+      role:          'admin',
       is_verified:   true,
       is_active:     true,
     },

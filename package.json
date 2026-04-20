@@ -1,9 +1,9 @@
 {
-  "name": "niyexdroid-prop-man-mobile",
+  "name": "niyexdroid-asset-hub-mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "docker-compose up -d && expo start --port 8081",
+    "dev": "docker-compose up -d && expo run:android --port 8081 --device",
     "dev:rebuild": "docker-compose up -d && expo run:android --port 8081 --device",
     "dev:rebuild:clean": "docker-compose up -d && expo run:android --port 8081 --device --no-build-cache",
     "dev:emulator": "docker-compose up -d && expo run:android --port 8081",
@@ -11,7 +11,7 @@
     "android": "expo run:android --port 8081",
     "ios": "expo run:ios",
     "adb:reverse": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:4000 tcp:4000",
-    "adb:device": "adb -d reverse tcp:8081 tcp:8081 && adb -d reverse tcp:4000 tcp:4000",
+    "adb:device": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:4000 tcp:4000",
     "adb:emulator": "adb -e reverse tcp:8081 tcp:8081 && adb -e reverse tcp:4000 tcp:4000",
     "backend": "docker-compose up -d",
     "backend:rebuild": "docker-compose up --build -d",
@@ -55,7 +55,7 @@
     "react-native-toast-message": "^2.2.0",
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.16.0",
-    "react-native-worklets": "0.7.2",
+    "react-native-worklets": "^0.7.4",
     "zod": "^3.22.4",
     "zustand": "^4.5.0"
   },

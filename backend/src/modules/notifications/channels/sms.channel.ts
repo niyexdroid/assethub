@@ -4,7 +4,7 @@ import type { ChannelResult } from '../../../types/notification.types';
 
 /**
  * Send a plain SMS (non-OTP) via SendChamp.
- * Requires an approved sender ID — use only after PropMan sender is approved.
+ * Requires an approved sender ID — use only after AssetHub sender is approved.
  */
 export async function sendSms(phone: string, body: string): Promise<ChannelResult> {
   const to = phone.replace(/^\+/, '');
@@ -12,7 +12,7 @@ export async function sendSms(phone: string, body: string): Promise<ChannelResul
     await sendchampClient.post('/sms/send', {
       to:          [to],
       message:     body,
-      sender_name: 'Sendchamp',   // default sender until PropMan is approved
+      sender_name: 'Sendchamp',   // default sender until AssetHub is approved
       route:       'non_dnd',
     });
     return { channel: 'sms', success: true };
@@ -40,7 +40,7 @@ export async function sendOtpViaSendchamp(
       token_length:            6,
       expiration_time:         10,
       customer_mobile_number:  mobile,
-      meta_data:               { app: 'PropMan' },
+      meta_data:               { app: 'AssetHub' },
     });
 
     if (res.status !== 'success') {

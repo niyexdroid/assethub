@@ -3,6 +3,13 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { API_BASE_URL, API_ENDPOINTS } from '../constants/api';
 
+export function getErrorMessage(error: any): string {
+  if (error?.response?.data?.message) return error.response.data.message;
+  if (error?.code === 'ECONNABORTED') return 'Request timed out. Check your connection.';
+  if (error?.message === 'Network Error') return 'Could not reach the server. Check your connection.';
+  return 'Something went wrong. Please try again.';
+}
+
 export const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 15000,
@@ -29,8 +36,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
+    console.warn(`[api] ${original?.method?.toUpperCase()} ${original?.url} →`, error.response?.status ?? error.code ?? error.message);
 
-    if (error.response?.status !== 401 || original._retry) {
+    if (error.response?.status !== 401 || original._retry || original.url?.includes('/auth/')) {
       return Promise.reject(error);
     }
 

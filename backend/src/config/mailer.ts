@@ -10,4 +10,4 @@ export const transporter = nodemailer.createTransport({
 });
 
 export const FROM_EMAIL = env.GMAIL_USER;
-export const FROM_NAME  = 'PropMan';
+export const FROM_NAME  = 'AssetHub';
