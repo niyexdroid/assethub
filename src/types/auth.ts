@@ -5,8 +5,8 @@ export interface User {
   id: string;
   first_name: string;
   last_name: string;
-  phone_number: string;
-  email?: string;
+  email: string;
+  phone_number?: string;
   role: UserRole;
   package?: TenantPackage;
   is_verified: boolean;
@@ -25,21 +25,32 @@ export interface AuthResponse {
 }
 
 export interface LoginRequest {
-  identifier: string; // phone or email
+  email: string;
   password: string;
 }
+
+export interface LoginOtpResponse {
+  requiresOtp: true;
+  login_token: string;
+}
+
+export interface GoogleProfile {
+  googleId:   string;
+  email:      string;
+  first_name: string;
+  last_name:  string;
+  avatar_url?: string;
+}
+
+export type GoogleAuthResponse =
+  | { isNewUser: false; user: User; tokens: AuthTokens }
+  | { isNewUser: true;  profile: GoogleProfile };
 
 export interface RegisterRequest {
   first_name: string;
   last_name: string;
-  phone_number: string;
-  email?: string;
+  email: string;
   password: string;
   role: UserRole;
   package?: TenantPackage;
-}
-
-export interface VerifyOtpRequest {
-  phone_number: string;
-  otp: string;
 }

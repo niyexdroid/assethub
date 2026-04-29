@@ -10,6 +10,7 @@ node_modules/
 .env.production
 .env.staging
 *.env
+cli_sct.json
 
 # ── Expo / React Native ────────────────────────────────────────────────────────
 .expo/
@@ -83,3 +84,4 @@ docker-compose.override.yml
 .cache/
 .temp/
 tmp/
+.aider*

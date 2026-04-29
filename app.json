@@ -3,16 +3,18 @@
     "name": "AssetHub",
     "slug": "niyexdroid-asset-hub",
     "version": "1.0.0",
+    "scheme": "assethub",
     "newArchEnabled": true,
     "plugins": [
       "expo-asset",
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
+      "expo-web-browser",
       [
-        "expo-notifications",
+        "@react-native-google-signin/google-signin",
         {
-          "icon": "./assets/images/notification-icon.png",
-          "color": "#12A376"
+          "iosUrlScheme": "com.googleusercontent.apps.426756347604-bcu0v0pb5n53gv1s61l5h10g2ic6sqj4"
         }
       ]
     ],

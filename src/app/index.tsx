@@ -1,8 +1,22 @@
+import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
+import { useAuthStore } from '../store/auth.store';
 
-// Root index — _layout.tsx handles auth-based redirection.
-// This screen shows briefly while fonts + auth load.
 export default function Index() {
+  const { isAuthenticated, isLoading, requiresBiometric, user } = useAuthStore();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (requiresBiometric) {
+      router.replace('/(auth)/biometric-lock');
+    } else if (isAuthenticated) {
+      router.replace(user?.role === 'landlord' ? '/(landlord)/dashboard' : '/(tenant)/home');
+    } else {
+      router.replace('/(auth)/login');
+    }
+  }, [isAuthenticated, isLoading, requiresBiometric]);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#0D1117', alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator size="large" color="#12A376" />

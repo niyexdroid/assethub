@@ -18,15 +18,6 @@ export const usersService = {
     await api.post(API_ENDPOINTS.users.changePassword, data);
   },
 
-  changePhone: async (new_phone: string): Promise<void> => {
-    await api.post(API_ENDPOINTS.users.changePhone, { new_phone });
-  },
-
-  verifyPhoneChange: async (new_phone: string, otp: string): Promise<User> => {
-    const res = await api.post<User>(API_ENDPOINTS.users.changePhoneVerify, { new_phone, otp });
-    return res.data;
-  },
-
   uploadAvatar: async (imageUri: string): Promise<{ avatar_url: string; user: User }> => {
     const form = new FormData();
     const filename = imageUri.split('/').pop() ?? 'avatar.jpg';

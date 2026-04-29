@@ -8,6 +8,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { Badge }  from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { tenanciesService, Tenancy } from '../../../services/tenancies.service';
+import { formatNGN } from '../../../utils/format';
 
 const FILTER_TABS = ['All', 'Active', 'Pending', 'Terminated'];
 
@@ -98,7 +99,7 @@ export default function TenanciesScreen() {
                         {t.property?.title ?? t.property_id}
                       </Text>
                       <Text style={[typography.small, { color: theme.primaryLight, fontWeight: '600', marginTop: 2 }]}>
-                        ₦{(t.monthly_rent ?? t.yearly_amount ?? t.monthly_amount ?? 0).toLocaleString('en-NG')}/mo
+                        {formatNGN((t.monthly_rent ?? t.yearly_amount ?? t.monthly_amount ?? 0))}/mo
                       </Text>
                     </View>
                     <Badge label={t.status} variant={statusVariant} dot />

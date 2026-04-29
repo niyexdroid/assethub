@@ -14,8 +14,8 @@ const OTP_LENGTH = 6;
 
 export default function ForgotPasswordScreen() {
   const { theme } = useTheme();
-  const [step, setStep]       = useState<'phone' | 'reset'>('phone');
-  const [phone, setPhone]     = useState('');
+  const [step, setStep]       = useState<'email' | 'reset'>('email');
+  const [email, setEmail]     = useState('');
   const [otp, setOtp]         = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [showPass, setShowPass]     = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -26,7 +26,7 @@ export default function ForgotPasswordScreen() {
   const shakeX = useSharedValue(0);
 
   const { control, handleSubmit, watch, formState: { errors } } = useForm<{
-    phone_number: string;
+    email: string;
     new_password: string;
     confirm_password: string;
   }>();
@@ -63,15 +63,15 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const onSendOtp = async (data: { phone_number: string }) => {
+  const onSendCode = async (data: { email: string }) => {
     setLoading(true);
     try {
-      await authService.forgotPassword(data.phone_number);
-      setPhone(data.phone_number);
+      await authService.forgotPassword(data.email);
+      setEmail(data.email);
       setTimer(60);
       setStep('reset');
     } catch (err: any) {
-      const message = err?.response?.data?.message ?? 'Could not send OTP. Please try again.';
+      const message = err?.response?.data?.message ?? 'Could not send reset code. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setLoading(false);
@@ -84,7 +84,7 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      await authService.resetPassword({ phone_number: phone, otp: code, new_password: data.new_password });
+      await authService.resetPassword({ email, otp: code, new_password: data.new_password });
       Alert.alert('Success', 'Password reset successfully. Please sign in.', [
         { text: 'Sign In', onPress: () => router.replace('/(auth)/login') },
       ]);
@@ -97,14 +97,14 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const resendOtp = async () => {
+  const resendCode = async () => {
     try {
-      await authService.forgotPassword(phone);
+      await authService.forgotPassword(email);
       setTimer(60);
       setOtp(Array(OTP_LENGTH).fill(''));
       inputs.current[0]?.focus();
     } catch {
-      Alert.alert('Error', 'Could not resend OTP.');
+      Alert.alert('Error', 'Could not resend code.');
     }
   };
 
@@ -118,29 +118,29 @@ export default function ForgotPasswordScreen() {
             <Text style={{ fontSize: 28 }}>🔑</Text>
           </LinearGradient>
           <Text style={[typography.h2, { color: theme.textPrimary, marginTop: 20 }]}>
-            {step === 'phone' ? 'Forgot password?' : 'Reset password'}
+            {step === 'email' ? 'Forgot password?' : 'Reset password'}
           </Text>
           <Text style={[typography.body, { color: theme.textSecondary, marginTop: 6, textAlign: 'center' }]}>
-            {step === 'phone'
-              ? 'Enter your registered phone number and we\'ll send you a code.'
-              : `Enter the code sent to ${phone} and your new password.`}
+            {step === 'email'
+              ? 'Enter your registered email and we\'ll send you a reset code.'
+              : `Enter the code sent to ${email} and your new password.`}
           </Text>
         </Animated.View>
 
-        {step === 'phone' ? (
+        {step === 'email' ? (
           <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.form}>
-            <Controller control={control} name="phone_number"
+            <Controller control={control} name="email"
               rules={{
-                required: 'Phone number is required',
-                pattern: { value: /^(\+234|0)[789]\d{9}$/, message: 'Invalid Nigerian number' },
+                required: 'Email is required',
+                pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email address' },
               }}
               render={({ field: { onChange, value } }) => (
-                <Input label="Phone number" placeholder="08012345678" keyboardType="phone-pad"
-                  value={value} onChangeText={onChange}
-                  error={errors.phone_number?.message as string}
-                  leftIcon={<Text style={{ fontSize: 18 }}>📱</Text>} />
+                <Input label="Email address" placeholder="you@example.com" keyboardType="email-address"
+                  autoCapitalize="none" value={value} onChangeText={onChange}
+                  error={errors.email?.message as string}
+                  leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>} />
               )} />
-            <Button title="Send Code" onPress={handleSubmit(onSendOtp)} size="lg" loading={loading} />
+            <Button title="Send Code" onPress={handleSubmit(onSendCode)} size="lg" loading={loading} />
           </Animated.View>
         ) : (
           <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.form}>
@@ -177,7 +177,7 @@ export default function ForgotPasswordScreen() {
                 ? <Text style={[typography.body, { color: theme.textSecondary }]}>
                     Resend in <Text style={{ color: theme.primaryLight, fontWeight: '700' }}>{timer}s</Text>
                   </Text>
-                : <Pressable onPress={resendOtp}>
+                : <Pressable onPress={resendCode}>
                     <Text style={[typography.bodyMed, { color: theme.primaryLight }]}>Resend code</Text>
                   </Pressable>
               }

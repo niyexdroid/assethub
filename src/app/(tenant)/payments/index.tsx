@@ -20,7 +20,6 @@ const STATUS_CONFIG: Record<string, { variant: 'danger' | 'warning' | 'success';
   partially_paid:  { variant: 'warning', label: 'Partial', icon: 'ellipse-outline',           iconColor: '#FFA040' },
 };
 
-function fmt(n: number) { return '₦' + n.toLocaleString('en-NG'); }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -73,7 +72,7 @@ export default function PaymentsScreen() {
       <Animated.View entering={FadeInDown.delay(0).springify()}>
         <LinearGradient colors={theme.primaryGrad} style={styles.banner}>
           <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)' }]}>Total Outstanding</Text>
-          <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{fmt(totalOwed)}</Text>
+          <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{formatNGN(totalOwed)}</Text>
           <View style={styles.bannerRow}>
             <View style={styles.bannerStat}>
               <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Overdue</Text>
@@ -169,7 +168,7 @@ function PaymentRow({ item, tenancyId, theme }: { item: PaymentScheduleItem; ten
       </View>
       <View style={{ alignItems: 'flex-end', gap: 6 }}>
         <Text style={[typography.bodyMed, { color: isPaid ? theme.success : theme.textPrimary }]}>
-          {fmt(item.amount)}
+          {formatNGN(item.amount)}
         </Text>
         <Badge label={cfg.label} variant={cfg.variant} />
       </View>

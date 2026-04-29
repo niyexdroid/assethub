@@ -92,7 +92,6 @@ export default function SettingsScreen() {
   // Modal visibility
   const [showPassword,   setShowPassword]   = useState(false);
   const [showEmail,      setShowEmail]      = useState(false);
-  const [showPhone,      setShowPhone]      = useState(false);
   const [showName,       setShowName]       = useState(false);
 
   // Change password
@@ -104,11 +103,6 @@ export default function SettingsScreen() {
 
   // Update email
   const [email, setEmail] = useState(user?.email ?? '');
-
-  // Update phone — 2 steps
-  const [newPhone,  setNewPhone]  = useState('');
-  const [phoneOtp,  setPhoneOtp]  = useState('');
-  const [phoneStep, setPhoneStep] = useState<'enter' | 'otp'>('enter');
 
   // Update name
   const [firstName, setFirstName] = useState(user?.first_name ?? '');
@@ -183,34 +177,10 @@ export default function SettingsScreen() {
     } finally { setLoading(false); }
   };
 
-  /* ── Change phone step 1 ── */
-  const handlePhoneRequest = async () => {
-    setLoading(true);
-    try {
-      await usersService.changePhone(newPhone);
-      setPhoneStep('otp');
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error ?? 'Failed to send OTP');
-    } finally { setLoading(false); }
-  };
-
-  /* ── Change phone step 2 ── */
-  const handlePhoneVerify = async () => {
-    setLoading(true);
-    try {
-      const updated = await usersService.verifyPhoneChange(newPhone, phoneOtp);
-      await refreshUser(updated);
-      Alert.alert('Success', 'Phone number updated');
-      setShowPhone(false); setNewPhone(''); setPhoneOtp(''); setPhoneStep('enter');
-    } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.error ?? 'Invalid OTP');
-    } finally { setLoading(false); }
-  };
-
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: async () => { await clearAuth(); router.replace('/(auth)/login'); } },
+      { text: 'Log Out', style: 'destructive', onPress: () => clearAuth() },
     ]);
   };
 
@@ -248,13 +218,8 @@ export default function SettingsScreen() {
                 {user ? `${user.first_name} ${user.last_name}` : 'Guest'}
               </Text>
               <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)', marginTop: 2 }]}>
-                {user?.phone_number ?? '—'}
+                {user?.email ?? '—'}
               </Text>
-              {user?.email && (
-                <Text style={[typography.small, { color: 'rgba(255,255,255,0.65)', marginTop: 1 }]}>
-                  {user.email}
-                </Text>
-              )}
             </View>
             <Pressable onPress={() => setShowName(true)} style={styles.editBadge}>
               <Ionicons name="pencil" size={13} color="#fff" />
@@ -273,7 +238,6 @@ export default function SettingsScreen() {
 
         <Section label="ACCOUNT" delay={160}>
           <Row icon="lock-closed-outline"      label="Change Password"  onPress={() => setShowPassword(true)} />
-          <Row icon="phone-portrait-outline"   label="Update Phone"     value={user?.phone_number} onPress={() => setShowPhone(true)} />
           <Row icon="mail-outline"             label="Update Email"     value={user?.email || 'Not set'} onPress={() => setShowEmail(true)} />
           <Row icon="shield-checkmark-outline" label="KYC Verification" value={user?.is_verified ? 'Verified' : 'Not verified'} onPress={() => router.push('/(onboarding)/index')} />
         </Section>
@@ -320,29 +284,6 @@ export default function SettingsScreen() {
           <Input label="Email Address" placeholder="you@example.com" keyboardType="email-address"
             autoCapitalize="none" value={email} onChangeText={setEmail} />
           <Button title="Save Email" onPress={handleUpdateEmail} loading={loading} size="lg" />
-        </View>
-      </SheetModal>
-
-      {/* ── Update Phone Modal ── */}
-      <SheetModal visible={showPhone} onClose={() => { setShowPhone(false); setPhoneStep('enter'); setNewPhone(''); setPhoneOtp(''); }} title="Update Phone Number">
-        <View style={styles.sheetBody}>
-          {phoneStep === 'enter' ? (
-            <>
-              <Input label="New Phone Number" placeholder="08012345678" keyboardType="phone-pad"
-                value={newPhone} onChangeText={setNewPhone} />
-              <Button title="Send OTP" onPress={handlePhoneRequest} loading={loading} size="lg" />
-            </>
-          ) : (
-            <>
-              <Text style={[typography.small, { color: theme.textMuted, marginBottom: 12 }]}>
-                Enter the 6-digit OTP sent to {newPhone}
-              </Text>
-              <Input label="OTP Code" placeholder="123456" keyboardType="number-pad"
-                value={phoneOtp} onChangeText={setPhoneOtp} />
-              <Button title="Verify & Update" onPress={handlePhoneVerify} loading={loading} size="lg" />
-              <Button title="Resend OTP" onPress={handlePhoneRequest} variant="ghost" size="lg" />
-            </>
-          )}
         </View>
       </SheetModal>
 

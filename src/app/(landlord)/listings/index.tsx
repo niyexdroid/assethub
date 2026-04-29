@@ -10,6 +10,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge }  from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { propertiesService, Property } from '../../../services/properties.service';
+import { formatNGN } from '../../../utils/format';
 
 export default function ListingsScreen() {
   const { theme }                   = useTheme();
@@ -97,7 +98,7 @@ export default function ListingsScreen() {
                       <Text style={[typography.caption, { color: theme.textMuted }]} numberOfLines={1}>{listing.address}</Text>
                     </View>
                     <Text style={[typography.small, { color: theme.primaryLight, fontWeight: '600', marginTop: 4 }]}>
-                      ₦{rent.toLocaleString('en-NG')}/{mode}
+                      {formatNGN(rent)}/{mode}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>

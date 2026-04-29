@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { useTheme } from '../../hooks/useTheme';
 import { Button } from '../../components/ui/Button';
+import { GoogleButton } from '../../components/ui/GoogleButton';
 import { Input }  from '../../components/ui/Input';
 import { typography } from '../../constants/typography';
 import { authService } from '../../services/auth.service';
+import { useAuthStore } from '../../store/auth.store';
 import { RegisterRequest } from '../../types/auth';
+
+GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID });
 
 const ROLES = [{ id: 'tenant', label: '🏠 I am a Tenant' }, { id: 'landlord', label: '🔑 I am a Landlord' }];
 const PKGS  = [{ id: 'standard', label: '🏙 Standard' }, { id: 'student', label: '🎓 Student' }];
@@ -18,15 +23,38 @@ const PKGS  = [{ id: 'standard', label: '🏙 Standard' }, { id: 'student', labe
 export default function RegisterScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [role, setRole]         = useState<'tenant' | 'landlord'>('tenant');
-  const [pkg,  setPkg]          = useState<'standard' | 'student'>('standard');
-  const [showPass, setShowPass]  = useState(false);
-  const [loading, setLoading]    = useState(false);
+  const { setAuth: _setAuth } = useAuthStore();
+  const [role, setRole]        = useState<'tenant' | 'landlord'>('tenant');
+  const [pkg,  setPkg]         = useState<'standard' | 'student'>('standard');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading]   = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterRequest>();
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignUp = async () => {
+    setGoogleLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const { data } = await GoogleSignin.signIn();
+      const idToken = data?.idToken;
+      if (!idToken) throw new Error('No ID token returned');
+      const result = await authService.googleAuth(idToken);
+      if (result.isNewUser) {
+        router.push({ pathname: '/(auth)/google-complete', params: result.profile });
+      } else {
+        await setAuth(result.user, result.tokens);
+        router.replace(result.user.role === 'landlord' ? '/(landlord)/dashboard' : '/(tenant)/home');
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) return;
+      Alert.alert('Google Sign-Up Failed', error?.response?.data?.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const onSubmit = async (data: RegisterRequest) => {
-    console.log('[register] submitting', data);
     setLoading(true);
     try {
       const payload: RegisterRequest = {
@@ -34,11 +62,9 @@ export default function RegisterScreen() {
         role,
         ...(role === 'tenant' ? { package: pkg } : {}),
       };
-      console.log('[register] payload', payload);
-      await authService.register(payload);
-      router.push({ pathname: '/(auth)/verify-otp', params: { phone_number: data.phone_number } });
+      const { email } = await authService.register(payload);
+      router.replace({ pathname: '/(auth)/verify-email', params: { email } });
     } catch (error: any) {
-      console.log('[register] error', JSON.stringify(error?.response?.data ?? error?.message ?? error));
       const message = error?.response?.data?.message ?? error?.message ?? 'Registration failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
@@ -59,6 +85,22 @@ export default function RegisterScreen() {
           <Text style={[typography.body, { color: theme.textSecondary, marginTop: 4 }]}>
             Join thousands of Lagosians on AssetHub
           </Text>
+        </Animated.View>
+
+        {/* Google sign-up */}
+        <Animated.View entering={FadeInDown.delay(60).springify()} style={{ marginBottom: 20 }}>
+          <GoogleButton
+            onPress={handleGoogleSignUp}
+            loading={googleLoading}
+            label="Sign up with Google"
+          />
+        </Animated.View>
+
+        {/* Divider */}
+        <Animated.View entering={FadeInDown.delay(70).springify()} style={[styles.divider, { marginBottom: 20 }]}>
+          <View style={[styles.divLine, { backgroundColor: theme.border }]} />
+          <Text style={[typography.caption, { color: theme.textMuted, marginHorizontal: 12 }]}>or sign up with email</Text>
+          <View style={[styles.divLine, { backgroundColor: theme.border }]} />
         </Animated.View>
 
         {/* Role selector */}
@@ -117,18 +159,13 @@ export default function RegisterScreen() {
               )} />
           </View>
 
-          <Controller control={control} name="phone_number"
-            rules={{ required: 'Phone is required', pattern: { value: /^(\+234|0)[789]\d{9}$/, message: 'Invalid Nigerian number' } }}
-            render={({ field: { onChange, value } }) => (
-              <Input label="Phone number" placeholder="08012345678" keyboardType="phone-pad"
-                value={value} onChangeText={onChange} error={errors.phone_number?.message as string}
-                leftIcon={<Text style={{ fontSize: 18 }}>📱</Text>} />
-            )} />
-
           <Controller control={control} name="email"
-            rules={{ pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email' } }}
+            rules={{
+              required: 'Email is required',
+              pattern: { value: /^\S+@\S+\.\S+$/, message: 'Invalid email address' },
+            }}
             render={({ field: { onChange, value } }) => (
-              <Input label="Email (optional)" placeholder="emeka@gmail.com" keyboardType="email-address"
+              <Input label="Email address" placeholder="emeka@gmail.com" keyboardType="email-address"
                 autoCapitalize="none" value={value} onChangeText={onChange}
                 error={errors.email?.message as string}
                 leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>} />
@@ -169,4 +206,6 @@ const styles = StyleSheet.create({
   toggleOption: { padding: 14, borderRadius: 12, borderWidth: 1.5, alignItems: 'center' },
   nameRow:      { flexDirection: 'row' },
   loginRow:     { flexDirection: 'row', justifyContent: 'center' },
+  divider:      { flexDirection: 'row', alignItems: 'center' },
+  divLine:      { flex: 1, height: StyleSheet.hairlineWidth },
 });

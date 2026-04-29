@@ -1,12 +1,19 @@
+import Constants from 'expo-constants';
+
 const getApiUrl = (): string => {
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://api.niyexdroid.com';
+  if (!__DEV__) return 'https://api.niyexdroid.com';
+
+  // Allow manual override via .env (e.g. for tunnels or emulators)
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+
+  // Derive host from Expo's Metro bundler URL — same machine, different port
+  const metroHost = Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
+  if (metroHost) {
+    const host = metroHost.split(':')[0];
+    return `http://${host}:8086`;
   }
-  // Set EXPO_PUBLIC_API_URL in .env for local development
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  return 'http://localhost:4000';
+
+  return 'http://localhost:8086';
 };
 
 export const API_BASE_URL = getApiUrl();
@@ -15,21 +22,23 @@ console.log('[api] base url:', API_BASE_URL);
 export const API_ENDPOINTS = {
   auth: {
     login:          '/auth/login',
-    register:       '/auth/register',
-    requestOtp:     '/auth/login/otp',
-    verifyOtp:      '/auth/verify-otp',
-    logout:         '/auth/logout',
+    verifyLoginOtp:  '/auth/login/verify',
+    resendLoginOtp:  '/auth/login/resend',
+    google:          '/auth/google',
+    googleComplete:  '/auth/google/complete',
+    register:            '/auth/register',
+    verifyEmail:         '/auth/verify-email',
+    resendVerification:  '/auth/resend-verification',
+    logout:              '/auth/logout',
     refresh:        '/auth/refresh',
     forgotPassword: '/auth/forgot-password',
     resetPassword:  '/auth/reset-password',
   },
   users: {
-    me:                '/users/me',
-    changePassword:    '/users/me/change-password',
-    changePhone:       '/users/me/change-phone',
-    changePhoneVerify: '/users/me/change-phone/verify',
-    fcmToken:          '/users/me/fcm-token',
-    avatar:            '/users/me/avatar',
+    me:             '/users/me',
+    changePassword: '/users/me/change-password',
+    fcmToken:       '/users/me/fcm-token',
+    avatar:         '/users/me/avatar',
   },
   properties: {
     search:           '/properties',

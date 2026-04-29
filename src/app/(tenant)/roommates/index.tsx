@@ -10,6 +10,7 @@ import { Button } from '../../../components/ui/Button';
 import { typography } from '../../../constants/typography';
 import { roommatesService, RoommateMatch } from '../../../services/roommates.service';
 import { tenanciesService } from '../../../services/tenancies.service';
+import { formatNGN } from '../../../utils/format';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -167,7 +168,7 @@ export default function RoommatesScreen() {
                         {tenant ? `${tenant.first_name} ${tenant.last_name}` : 'Tenant'}
                       </Text>
                       <Text style={[typography.small, { color: theme.textMuted, marginTop: 2 }]}>
-                        Budget: ₦{profile.budget_min?.toLocaleString('en-NG') ?? '—'} – ₦{profile.budget_max?.toLocaleString('en-NG') ?? '—'}/mo
+                        Budget: {profile.budget_min ? formatNGN(profile.budget_min) : '—'} – {profile.budget_max ? formatNGN(profile.budget_max) : '—'}/mo
                       </Text>
                       <Text style={[typography.small, { color: theme.textMuted }]}>
                         {profile.gender_preference ? `Prefers: ${profile.gender_preference}` : ''}

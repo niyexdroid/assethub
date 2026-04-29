@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { useTheme } from '../../../hooks/useTheme';
 import { typography } from '../../../constants/typography';
 import { tenanciesService, Tenancy } from '../../../services/tenancies.service';
+import { formatNGN } from '../../../utils/format';
 
 const STATUS_COLOR: Record<string, string> = {
   active:     '#12A376',
@@ -50,7 +51,7 @@ export default function TenancyScreen() {
     new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
 
   const formatNaira = (n: number) =>
-    '₦' + n.toLocaleString('en-NG');
+    formatNGN(n);
 
   const activeTenancy = tenancies.find(t => t.status === 'active');
   const others        = tenancies.filter(t => t.status !== 'active');

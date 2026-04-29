@@ -8,6 +8,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { Badge }  from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { paymentsService, PaymentTransaction } from '../../../services/payments.service';
+import { formatNGN } from '../../../utils/format';
 
 const STATUS_CONFIG: Record<string, { variant: 'success' | 'danger' | 'warning'; icon: React.ComponentProps<typeof Ionicons>['name']; color: string }> = {
   success: { variant: 'success', icon: 'checkmark-circle-outline', color: '#4ADE80' },
@@ -54,13 +55,13 @@ export default function LandlordPaymentsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[typography.label, { color: 'rgba(255,255,255,0.75)' }]}>Total Received</Text>
             <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>
-              ₦{totalReceived.toLocaleString('en-NG')}
+              {formatNGN(totalReceived)}
             </Text>
           </View>
           <View style={styles.bannerRight}>
             <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Pending</Text>
             <Text style={[typography.bodyMed, { color: '#FFA040' }]}>
-              ₦{totalPending.toLocaleString('en-NG')}
+              {formatNGN(totalPending)}
             </Text>
           </View>
         </LinearGradient>
@@ -101,7 +102,7 @@ export default function LandlordPaymentsScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
                     <Text style={[typography.bodyMed, { color: tx.status === 'success' ? theme.success : theme.textPrimary }]}>
-                      ₦{tx.amount.toLocaleString('en-NG')}
+                      {formatNGN(tx.amount)}
                     </Text>
                     <Badge
                       label={tx.status === 'success' ? 'Received' : tx.status === 'failed' ? 'Failed' : 'Pending'}

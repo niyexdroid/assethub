@@ -10,8 +10,6 @@ router.use(authenticate);
 router.get( '/me',                    ctrl.getMe);
 router.patch('/me',                   ctrl.updateMe);
 router.post('/me/change-password',    ctrl.changePassword);
-router.post('/me/change-phone',       ctrl.requestPhoneChange);
-router.post('/me/change-phone/verify',ctrl.verifyPhoneChange);
 router.post('/me/fcm-token',          ctrl.saveFcmToken);
 router.post('/me/avatar',             upload.single('avatar'), ctrl.uploadAvatar);
 

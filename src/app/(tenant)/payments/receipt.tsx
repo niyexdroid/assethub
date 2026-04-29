@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ import { Button } from '../../../components/ui/Button';
 import { Badge } from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { paymentsService, PaymentTransaction } from '../../../services/payments.service';
+import { formatNGN } from '../../../utils/format';
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   const { theme } = useTheme();
@@ -78,11 +79,11 @@ export default function ReceiptScreen() {
         <LinearGradient colors={theme.primaryGrad} style={styles.amountCard}>
           <Text style={[typography.small, { color: 'rgba(255,255,255,0.7)' }]}>Amount Paid</Text>
           <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>
-            {'\u20A6'}{total.toLocaleString('en-NG')}
+            {formatNGN(total)}
           </Text>
           {platformFee > 0 && (
             <Text style={[typography.caption, { color: 'rgba(255,255,255,0.6)', marginTop: 6 }]}>
-              Includes {'\u20A6'}{platformFee.toLocaleString('en-NG')} platform fee
+              Includes {formatNGN(platformFee)} platform fee
             </Text>
           )}
         </LinearGradient>
@@ -96,13 +97,13 @@ export default function ReceiptScreen() {
         <Row label="Date & Time" value={tx ? new Date(tx.paid_at).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }) : '—'} />
         {tx?.channel && <><View style={[styles.divider, { backgroundColor: theme.border }]} /><Row label="Method" value={tx.channel} /></>}
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        <Row label="Rent amount" value={'\u20A6' + displayAmount.toLocaleString('en-NG')} />
+        <Row label="Rent amount" value={formatNGN(displayAmount)} />
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        <Row label="Platform fee" value={'\u20A6' + platformFee.toLocaleString('en-NG')} />
+        <Row label="Platform fee" value={formatNGN(platformFee)} />
         <View style={[styles.totalRow, { borderTopColor: theme.border }]}>
           <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>Total charged</Text>
           <Text style={[typography.h3, { color: theme.primary }]}>
-            {'\u20A6'}{total.toLocaleString('en-NG')}
+            {formatNGN(total)}
           </Text>
         </View>
       </Animated.View>

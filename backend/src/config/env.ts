@@ -4,7 +4,7 @@ dotenv.config();
 
 const schema = z.object({
   NODE_ENV:              z.enum(['development', 'test', 'production']).default('development'),
-  PORT:                  z.string().default('4000'),
+  PORT:                  z.string().default('8086'),
   DATABASE_URL:          z.string(),
   REDIS_URL:             z.string(),
   JWT_ACCESS_SECRET:     z.string(),

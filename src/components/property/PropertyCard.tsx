@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { typography } from '../../constants/typography';
+import { formatNGN } from '../../utils/format';
 
 const { width } = Dimensions.get('window');
 const CARD_W    = width - 40;
@@ -30,13 +31,11 @@ interface Props {
   index?: number;
 }
 
-function formatNGN(amount: number) {
-  return '₦' + amount.toLocaleString('en-NG');
-}
 
 export function PropertyCard({ property: p, index = 0 }: Props) {
   const { theme } = useTheme();
   const photo     = p.photos?.[0];
+  const [imgError, setImgError] = useState(false);
   const rentLabel = p.tenancy_mode === 'yearly'
     ? `${formatNGN(p.yearly_rent ?? 0)}/yr`
     : `${formatNGN(p.monthly_rent ?? 0)}/mo`;
@@ -47,8 +46,13 @@ export function PropertyCard({ property: p, index = 0 }: Props) {
 
         {/* Image / placeholder */}
         <View style={styles.imageWrap}>
-          {photo ? (
-            <Image source={{ uri: photo }} style={styles.image} resizeMode="cover" />
+          {photo && !imgError ? (
+            <Image
+              source={{ uri: photo }}
+              style={styles.image}
+              resizeMode="cover"
+              onError={() => setImgError(true)}
+            />
           ) : (
             <View style={[styles.image, styles.placeholder, { backgroundColor: theme.surfaceRaised }]}>
               <Ionicons name="home-outline" size={48} color={theme.textMuted} />

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+﻿import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useTheme } from '../../../hooks/useTheme';
 import { Button } from '../../../components/ui/Button';
 import { typography } from '../../../constants/typography';
 import { paymentsService } from '../../../services/payments.service';
+import { formatNGN } from '../../../utils/format';
 
 type PayStatus = 'loading' | 'webview' | 'success' | 'failed';
 
@@ -76,7 +77,7 @@ export default function PayScreen() {
           Payment Successful!
         </Text>
         <Text style={[typography.body, { color: theme.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 22 }]}>
-          {'\u20A6'}{Number(amount).toLocaleString('en-NG')} for {label} has been processed.{'\n'}
+          {formatNGN(Number(amount))} for {label} has been processed.{'\n'}
           Your landlord has been notified.
         </Text>
         <View style={{ width: '100%', paddingHorizontal: 24, gap: 12, marginTop: 32 }}>

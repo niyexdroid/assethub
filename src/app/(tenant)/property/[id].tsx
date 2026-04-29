@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, interpolate,
   useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -13,6 +13,7 @@ import { Card }   from '../../../components/ui/Card';
 import { typography } from '../../../constants/typography';
 import { propertiesService, Property } from '../../../services/properties.service';
 import { PhotoCarousel } from '../../../components/property/PhotoCarousel';
+import { formatNGN } from '../../../utils/format';
 
 const { width, height } = Dimensions.get('window');
 const IMG_HEIGHT = height * 0.45;
@@ -117,7 +118,7 @@ export default function PropertyDetailScreen() {
               <Card style={styles.priceCard} glow="green">
                 <Text style={[typography.caption, { color: theme.textMuted }]}>Per Month</Text>
                 <Text style={[typography.price, { color: theme.primaryLight }]}>
-                  {'\u20A6'}{p.monthly_rent.toLocaleString()}
+                  {formatNGN(p.monthly_rent)}
                 </Text>
               </Card>
             )}
@@ -125,7 +126,7 @@ export default function PropertyDetailScreen() {
               <Card style={styles.priceCard} glow="gold">
                 <Text style={[typography.caption, { color: theme.textMuted }]}>Per Year</Text>
                 <Text style={[typography.price, { color: theme.accent }]}>
-                  {'\u20A6'}{p.yearly_rent.toLocaleString()}
+                  {formatNGN(p.yearly_rent)}
                 </Text>
               </Card>
             )}
@@ -138,7 +139,7 @@ export default function PropertyDetailScreen() {
                 {[
                   { icon: 'bed-outline'   as const, label: `${p.bedrooms ?? '—'} Bedrooms`                                    },
                   { icon: 'water-outline' as const, label: `${p.bathrooms ?? '—'} Bathrooms`                                  },
-                  { icon: 'cash-outline'  as const, label: `${'\u20A6'}${(p.caution_fee ?? 0).toLocaleString()} caution`      },
+                  { icon: 'cash-outline'  as const, label: `${formatNGN(p.caution_fee ?? 0)} caution`      },
                 ].map((s, i) => (
                   <View key={i} style={styles.specItem}>
                     <Ionicons name={s.icon} size={24} color={theme.primary} />
@@ -194,7 +195,7 @@ export default function PropertyDetailScreen() {
           <View style={[styles.cta, { borderTopColor: theme.border }]}>
             <View style={styles.ctaFees}>
               <Text style={[typography.caption, { color: theme.textMuted }]}>Agency fee</Text>
-              <Text style={[typography.label, { color: theme.textPrimary }]}>{'\u20A6'}{(p.agency_fee ?? 0).toLocaleString()}</Text>
+              <Text style={[typography.label, { color: theme.textPrimary }]}>{formatNGN(p.agency_fee ?? 0)}</Text>
             </View>
             <Button
               title="Apply Now"

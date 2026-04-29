@@ -77,19 +77,7 @@ export class NotificationsService {
    * Tries WhatsApp first, falls back to SMS.
    * Stores the SendChamp reference in Redis so the auth service can verify it.
    */
-  async sendOtp(userId: string, phone: string, otp: string): Promise<void> {
-    // Fetch user email
-    const { rows } = await pool.query(
-      'SELECT email FROM users WHERE id = $1',
-      [userId]
-    );
-    const email = rows[0]?.email;
-
-    if (!email) {
-      logger.warn('OTP skipped — no email on file', { userId });
-      return;
-    }
-
+  async sendOtp(userId: string, email: string, otp: string): Promise<void> {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>

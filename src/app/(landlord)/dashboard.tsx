@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+﻿import React, { useCallback, useState } from 'react';
+import { formatNGNCompact } from '../../utils/format';
 import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -19,12 +20,6 @@ import { paymentsService } from '../../services/payments.service';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-function fmt(n: number) {
-  if (n >= 1_000_000) return '₦' + (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000)     return '₦' + (n / 1_000).toFixed(0) + 'k';
-  return '₦' + n.toLocaleString('en-NG');
-}
-
 export default function DashboardScreen() {
   const { theme }  = useTheme();
   const insets     = useSafeAreaInsets();
@@ -36,9 +31,11 @@ export default function DashboardScreen() {
   const [payments,    setPayments]    = useState<any[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [refreshing,  setRefreshing]  = useState(false);
+  const [loadError,   setLoadError]   = useState(false);
 
   const load = useCallback(async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true); else setLoading(true);
+    setLoadError(false);
     try {
       const [props, tens, comps, pays] = await Promise.allSettled([
         propertiesService.getLandlordProperties(),
@@ -46,6 +43,8 @@ export default function DashboardScreen() {
         complaintsService.list(),
         paymentsService.getHistory(),
       ]);
+      const anyFulfilled = [props, tens, comps, pays].some(r => r.status === 'fulfilled');
+      if (!anyFulfilled) { setLoadError(true); return; }
       if (props.status  === 'fulfilled') setProperties(props.value);
       if (tens.status   === 'fulfilled') setTenancies(tens.value);
       if (comps.status  === 'fulfilled') setComplaints(comps.value);
@@ -56,7 +55,8 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const hasData = properties.length > 0 || tenancies.length > 0 || payments.length > 0;
+  useFocusEffect(useCallback(() => { load(!hasData ? false : true); }, [load, hasData]));
 
   const activeTenancies = tenancies.filter(t => t.status === 'active');
   const pendingTenancies = tenancies.filter(t => t.status === 'pending');
@@ -79,7 +79,7 @@ export default function DashboardScreen() {
   const STATS: { icon: IoniconsName; label: string; value: string; sub: string; color: string; glow: 'green' | 'gold' }[] = [
     { icon: 'home-outline',          label: 'Properties', value: String(properties.length),     sub: `${properties.filter(p => p.is_available).length} available`, color: '#12A376', glow: 'green' },
     { icon: 'people-outline',        label: 'Tenants',    value: String(activeTenancies.length), sub: `${pendingTenancies.length} pending`,                          color: '#F4A825', glow: 'gold'  },
-    { icon: 'wallet-outline',        label: 'This Month', value: fmt(thisMonthRevenue),          sub: `${payments.filter((p: any) => { const d = new Date(p.paid_at ?? p.created_at); const n = new Date(); return d.getMonth() === n.getMonth(); }).length} payments`, color: '#12A376', glow: 'green' },
+    { icon: 'wallet-outline',        label: 'This Month', value: formatNGNCompact(thisMonthRevenue),          sub: `${payments.filter((p: any) => { const d = new Date(p.paid_at ?? p.created_at); const n = new Date(); return d.getMonth() === n.getMonth(); }).length} payments`, color: '#12A376', glow: 'green' },
     { icon: 'alert-circle-outline',  label: 'Complaints', value: String(openComplaints.length),  sub: 'Open',                                                        color: '#F4A825', glow: 'gold'  },
   ];
 
@@ -116,7 +116,7 @@ export default function DashboardScreen() {
         <LinearGradient colors={theme.primaryGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
           <View>
             <Text style={[typography.label, { color: 'rgba(255,255,255,0.7)' }]}>Total Revenue This Month</Text>
-            <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{fmt(thisMonthRevenue)}</Text>
+            <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{formatNGNCompact(thisMonthRevenue)}</Text>
           </View>
           <View style={[styles.bannerIcon, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
             <Ionicons name="trending-up" size={32} color="#fff" />
@@ -149,7 +149,14 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        {loading ? (
+        {loadError ? (
+          <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Text style={[typography.body, { color: theme.textMuted, marginBottom: 12 }]}>Could not load data</Text>
+            <Pressable onPress={() => load()}>
+              <Text style={[typography.bodyMed, { color: theme.primaryLight }]}>Tap to retry</Text>
+            </Pressable>
+          </View>
+        ) : loading ? (
           <ActivityIndicator color={theme.primary} />
         ) : tenancies.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>

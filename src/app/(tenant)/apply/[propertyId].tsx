@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/Button';
 import { typography } from '../../../constants/typography';
 import { tenanciesService } from '../../../services/tenancies.service';
 import { propertiesService, Property } from '../../../services/properties.service';
+import { formatNGN } from '../../../utils/format';
 
 function OptionPill({ label, selected, onPress, theme }: any) {
   return (
@@ -98,13 +99,13 @@ export default function ApplyScreen() {
               {p.monthly_rent && (
                 <View>
                   <Text style={[typography.caption, { color: theme.textMuted }]}>Monthly</Text>
-                  <Text style={[typography.bodyMed, { color: theme.primary }]}>₦{Number(p.monthly_rent).toLocaleString('en-NG')}</Text>
+                  <Text style={[typography.bodyMed, { color: theme.primary }]}>{formatNGN(Number(p.monthly_rent))}</Text>
                 </View>
               )}
               {p.yearly_rent && (
                 <View>
                   <Text style={[typography.caption, { color: theme.textMuted }]}>Yearly</Text>
-                  <Text style={[typography.bodyMed, { color: theme.primary }]}>₦{Number(p.yearly_rent).toLocaleString('en-NG')}</Text>
+                  <Text style={[typography.bodyMed, { color: theme.primary }]}>{formatNGN(Number(p.yearly_rent))}</Text>
                 </View>
               )}
             </View>

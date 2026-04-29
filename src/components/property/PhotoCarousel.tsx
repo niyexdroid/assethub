@@ -80,8 +80,12 @@ interface Props {
 
 export function PhotoCarousel({ photos, height: imgHeight, gradientEnd }: Props) {
   const { theme } = useTheme();
-  const [index, setIndex]       = useState(0);
-  const [zoomUri, setZoomUri]   = useState<string | null>(null);
+  const [index, setIndex]           = useState(0);
+  const [zoomUri, setZoomUri]       = useState<string | null>(null);
+  const [failedIdx, setFailedIdx]   = useState<Set<number>>(new Set());
+
+  const markFailed = (i: number) =>
+    setFailedIdx(prev => new Set(prev).add(i));
 
   if (!photos?.length) {
     return (
@@ -100,11 +104,17 @@ export function PhotoCarousel({ photos, height: imgHeight, gradientEnd }: Props)
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={e => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => (
-          <Pressable onPress={() => setZoomUri(item)}>
-            <Image source={{ uri: item }} style={{ width, height: imgHeight }} resizeMode="cover" />
-          </Pressable>
-        )}
+        renderItem={({ item, index: i }) => (
+            <Pressable onPress={() => setZoomUri(item)}>
+              {failedIdx.has(i) ? (
+                <View style={{ width, height: imgHeight, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surfaceRaised }}>
+                  <Ionicons name="home-outline" size={72} color={theme.textMuted} />
+                </View>
+              ) : (
+                <Image source={{ uri: item }} style={{ width, height: imgHeight }} resizeMode="cover" onError={() => markFailed(i)} />
+              )}
+            </Pressable>
+          )}
       />
       {photos.length > 1 && (
         <View style={styles.dots}>

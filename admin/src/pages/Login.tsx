@@ -5,7 +5,7 @@ import { api } from '../api';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [phone,    setPhone]    = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
@@ -15,12 +15,8 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/login', { identifier: phone, password });
+      const res = await api.post('/auth/admin/login', { email, password });
       const { tokens, user } = res.data;
-      if (user.role !== 'admin') {
-        setError('Access denied. Admin accounts only.');
-        return;
-      }
       localStorage.setItem('admin_token', tokens.access_token);
       localStorage.setItem('admin_user', JSON.stringify(user));
       window.location.href = '/';
@@ -57,9 +53,9 @@ export default function Login() {
 
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
-              <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required
-                placeholder="+2348012345678"
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                placeholder="admin@assethub.com"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
             </div>
             <div>
