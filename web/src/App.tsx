@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthGate } from '@/components/guards/AuthGate'
 import { RequireAuth } from '@/components/guards/RequireAuth'
 import { RequireRole } from '@/components/guards/RequireRole'
@@ -13,6 +14,9 @@ import { VerifyEmail } from '@/pages/auth/VerifyEmail'
 import { VerifyLoginOtp } from '@/pages/auth/VerifyLoginOtp'
 import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { ResetPassword } from '@/pages/auth/ResetPassword'
+import { GoogleComplete } from '@/pages/auth/GoogleComplete'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 
 // Tenant pages
 import HomeScreen from '@/pages/tenant/Home'
@@ -29,18 +33,20 @@ import { Placeholder } from '@/pages/Placeholder'
 
 export function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<AuthGate />}>
-          {/* ── Auth (public) ────────────────────────── */}
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/verify-login-otp" element={<VerifyLoginOtp />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-          </Route>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AuthGate />}>
+            {/* ── Auth (public) ────────────────────────── */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/verify-login-otp" element={<VerifyLoginOtp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/google-complete" element={<GoogleComplete />} />
+            </Route>
 
           {/* ── Tenant ───────────────────────────────── */}
           <Route element={<RequireAuth />}>
@@ -102,5 +108,6 @@ export function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </GoogleOAuthProvider>
   )
 }

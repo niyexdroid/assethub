@@ -42,3 +42,25 @@ export interface RegisterRequest {
   role: UserRole
   package?: TenantPackage
 }
+
+export interface GoogleProfile {
+  googleId: string
+  email: string
+  first_name: string
+  last_name: string
+  avatar_url?: string
+}
+
+export type GoogleAuthResponse =
+  | { isNewUser: false; user: User; tokens: AuthTokens }
+  | { isNewUser: true; profile: GoogleProfile }
+
+export interface GoogleCompleteRequest {
+  googleId: string
+  email: string
+  first_name: string
+  last_name: string
+  avatar_url?: string
+  role: UserRole
+  package?: TenantPackage
+}

@@ -25,6 +25,7 @@ const schema = z.object({
   IMAGEKIT_PRIVATE_KEY:   z.string(),
   IMAGEKIT_URL_ENDPOINT:  z.string(),
   ENCRYPTION_KEY:        z.string().length(64, 'Must be 32-byte hex (64 chars)'),
+  GOOGLE_CLIENT_ID:       z.string().optional(),
   GOOGLE_MAPS_API_KEY:   z.string(),
 });
 

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Eye, EyeOff } from 'lucide-react'
 import { authService } from '@/services/auth.service'
+import { GoogleSignInButton } from '@/components/ui/GoogleSignInButton'
 import { registerSchema } from '@/lib/validators'
 import { getErrorMessage } from '@/lib/utils'
 
@@ -57,6 +58,15 @@ export function Register() {
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
       )}
+
+      <div className="mb-5">
+        <GoogleSignInButton label="Sign up with Google" onError={(msg) => setError(msg)} />
+      </div>
+
+      <div className="relative mb-5">
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+        <div className="relative flex justify-center text-xs"><span className="bg-card px-3 text-muted-foreground">or sign up with email</span></div>
+      </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Role selector */}

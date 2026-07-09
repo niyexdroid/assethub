@@ -1,6 +1,6 @@
 import { api } from '@/lib/api'
 import { API_ENDPOINTS } from '@/lib/api.endpoints'
-import type { AuthResponse, LoginRequest, LoginOtpResponse, RegisterRequest, AuthTokens } from '@/types/auth'
+import type { AuthResponse, LoginRequest, LoginOtpResponse, RegisterRequest, AuthTokens, GoogleAuthResponse, GoogleCompleteRequest } from '@/types/auth'
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginOtpResponse> => {
@@ -41,5 +41,15 @@ export const authService = {
 
   logout: async (refreshToken?: string): Promise<void> => {
     await api.post(API_ENDPOINTS.auth.logout, { refresh_token: refreshToken })
+  },
+
+  googleAuth: async (idToken: string): Promise<GoogleAuthResponse> => {
+    const res = await api.post<GoogleAuthResponse>(API_ENDPOINTS.auth.google, { idToken })
+    return res.data
+  },
+
+  googleComplete: async (profile: GoogleCompleteRequest): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>(API_ENDPOINTS.auth.googleComplete, profile)
+    return res.data
   },
 }
