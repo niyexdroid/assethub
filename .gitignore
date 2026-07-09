@@ -85,3 +85,4 @@ docker-compose.override.yml
 .temp/
 tmp/
 .aider*
+.gstack/
