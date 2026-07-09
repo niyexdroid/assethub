@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Eye, EyeOff } from 'lucide-react'
 import { authService } from '@/services/auth.service'
 import { registerSchema } from '@/lib/validators'
 import { getErrorMessage } from '@/lib/utils'
@@ -11,6 +12,7 @@ export function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof registerSchema>>({
@@ -64,8 +66,10 @@ export function Register() {
               key={r}
               type="button"
               onClick={() => form.setValue('role', r)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                role === r ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                role === r
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
               }`}
             >
               {r === 'tenant' ? 'Tenant' : 'Landlord'}
@@ -95,7 +99,17 @@ export function Register() {
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">Password</label>
-          <input {...form.register('password')} type="password" className="w-full h-11 px-4 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Min. 6 characters" />
+          <div className="relative">
+            <input {...form.register('password')} type={showPw ? 'text' : 'password'} className="w-full h-11 px-4 pr-11 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Min. 6 characters" />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+            >
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           {form.formState.errors.password && <p className="text-xs text-destructive mt-1">{form.formState.errors.password.message}</p>}
         </div>
 

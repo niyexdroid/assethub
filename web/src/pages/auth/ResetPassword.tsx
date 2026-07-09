@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Eye, EyeOff } from 'lucide-react'
 import { authService } from '@/services/auth.service'
 import { resetPasswordSchema } from '@/lib/validators'
 import { getErrorMessage } from '@/lib/utils'
@@ -10,6 +11,7 @@ import { getErrorMessage } from '@/lib/utils'
 export function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [done, setDone] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -59,7 +61,17 @@ export function ResetPassword() {
         </div>
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">New password</label>
-          <input {...form.register('new_password')} type="password" className="w-full h-11 px-4 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Min. 6 characters" />
+          <div className="relative">
+            <input {...form.register('new_password')} type={showPw ? 'text' : 'password'} className="w-full h-11 px-4 pr-11 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Min. 6 characters" />
+            <button
+              type="button"
+              onClick={() => setShowPw((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+            >
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           {form.formState.errors.new_password && <p className="text-xs text-destructive mt-1">{form.formState.errors.new_password.message}</p>}
         </div>
         <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
