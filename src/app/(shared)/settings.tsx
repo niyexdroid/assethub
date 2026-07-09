@@ -15,7 +15,9 @@ import { Input }  from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { typography } from '../../constants/typography';
 import { useAuthStore } from '../../store/auth.store';
+import { authService } from '../../services/auth.service';
 import { usersService } from '../../services/users.service';
+import * as SecureStore from 'expo-secure-store';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -180,7 +182,15 @@ export default function SettingsScreen() {
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => clearAuth() },
+      {
+        text: 'Log Out', style: 'destructive',
+        onPress: async () => {
+          // Revoke tokens on server (fire-and-forget), then clear locally
+          const rt = await SecureStore.getItemAsync('refresh_token');
+          authService.logout(rt ?? undefined).catch(() => {});
+          clearAuth();
+        },
+      },
     ]);
   };
 

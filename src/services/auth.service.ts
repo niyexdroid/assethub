@@ -54,7 +54,7 @@ export const authService = {
     await api.post(API_ENDPOINTS.auth.resetPassword, data);
   },
 
-  logout: async (): Promise<void> => {
-    await api.post(API_ENDPOINTS.auth.logout);
+  logout: async (refreshToken?: string): Promise<void> => {
+    await api.post(API_ENDPOINTS.auth.logout, { refresh_token: refreshToken });
   },
 };

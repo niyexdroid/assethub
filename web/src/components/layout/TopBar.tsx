@@ -3,6 +3,7 @@ import { Bell, Home, Menu, Moon, Sun, LogOut, User as UserIcon } from 'lucide-re
 import { useAuthStore } from '@/stores/auth.store'
 import { useTheme } from '@/hooks/useTheme'
 import { getInitials } from '@/lib/utils'
+import { authService } from '@/services/auth.service'
 import { useState } from 'react'
 
 interface Props {
@@ -14,12 +15,14 @@ interface Props {
 }
 
 export function TopBar({ onToggleSidebar, showSearch, searchValue, onSearchChange, searchPlaceholder }: Props) {
-  const { user, logout } = useAuthStore()
+  const { user, refreshToken, logout } = useAuthStore()
   const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Fire-and-forget — revoke tokens on server, but always clear locally
+    authService.logout(refreshToken ?? undefined).catch(() => {})
     logout()
     navigate('/login')
   }

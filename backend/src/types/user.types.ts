@@ -22,4 +22,6 @@ export interface AuthTokenPayload {
   sub: string;       // user id
   role: UserRole;
   type: 'access' | 'refresh';
+  jti: string;       // unique token id (for blocklisting)
+  family?: string;   // refresh token family (for rotation tracking)
 }

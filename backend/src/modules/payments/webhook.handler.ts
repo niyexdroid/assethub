@@ -19,17 +19,17 @@ function verifySignature(rawBody: Buffer, signature: string): boolean {
   return hash === signature;
 }
 
-export async function paystackWebhook(req: Request, res: Response) {
+export async function paystackWebhook(req: Request, res: Response): Promise<void> {
   const signature = req.headers['x-paystack-signature'] as string;
 
   if (!verifySignature(req.body, signature)) {
     logger.warn('Invalid Paystack webhook signature');
-    return res.status(400).json({ error: 'Invalid signature' });
+    res.status(400).json({ error: 'Invalid signature' });
+    return;
   }
 
-  // Respond to Paystack immediately — process async
+  // Respond to Paystack immediately — process async in background
   res.sendStatus(200);
-  return;
 
   let event: PaystackWebhookEvent;
   try {

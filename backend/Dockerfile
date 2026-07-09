@@ -1,17 +1,17 @@
-FROM node:20-alpine
-
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Install dependencies first (cached layer)
 COPY package*.json ./
-RUN npm install
-
-# Copy config files
+RUN npm ci
 COPY tsconfig.json ./
-
-# Copy source (overridden by volume mount in dev)
 COPY src ./src
+RUN npm run build
 
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
+# SQL migration files aren't compiled by tsc — copy them separately
+COPY --from=builder /app/src/database/migrations ./dist/database/migrations
 EXPOSE 4000
-
-CMD ["sh", "-c", "./node_modules/.bin/ts-node src/database/migrate.ts && npm run dev"]
+CMD ["sh", "-c", "node dist/database/migrate.js && node dist/app.js"]

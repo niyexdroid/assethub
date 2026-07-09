@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '../modules/auth/strategies/jwt.strategy';
+import { redis } from '../config/redis';
 import { pool } from '../config/database';
 
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
@@ -11,6 +12,10 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   try {
     const token   = header.slice(7);
     const payload = verifyAccessToken(token);
+
+    // Check if token has been blocklisted (logout)
+    const blocked = await redis.get(`blocklist:${payload.jti}`);
+    if (blocked) return res.status(401).json({ error: 'Token has been revoked' });
 
     // Lightweight check — confirm user still exists and is active
     const { rows } = await pool.query(

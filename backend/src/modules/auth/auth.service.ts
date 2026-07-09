@@ -1,11 +1,18 @@
 import bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { pool } from '../../config/database';
 import { redis } from '../../config/redis';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from './strategies/jwt.strategy';
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  accessTokenTtlSeconds,
+} from './strategies/jwt.strategy';
 import { generateOtp, verifyOtp } from './strategies/otp.strategy';
 import type { RegisterInput, LoginInput, ResetPasswordInput, GoogleCompleteInput } from './auth.validators';
+import type { UserRole } from '../../types/user.types';
 import { NotificationsService } from '../notifications/notifications.service';
 
 const notificationsService = new NotificationsService();
@@ -32,7 +39,16 @@ export class AuthService {
     );
 
     const otp = await generateOtp(input.email);
-    return { email: input.email, otp };
+
+    // Look up newly created user to send OTP notification
+    const { rows: newUser } = await pool.query(
+      'SELECT id FROM users WHERE email = $1', [input.email]
+    );
+    if (newUser[0]) {
+      notificationsService.sendOtp(newUser[0].id, input.email, otp).catch(() => {});
+    }
+
+    return { email: input.email };
   }
 
   async verifyEmail(email: string, otp: string) {
@@ -49,13 +65,8 @@ export class AuthService {
 
     const user = rows[0];
     const tokenPayload = { sub: user.id, role: user.role };
-    return {
-      tokens: {
-        access_token:  signAccessToken(tokenPayload),
-        refresh_token: signRefreshToken(tokenPayload),
-      },
-      user,
-    };
+    const tokens = await this._issueTokenPair(tokenPayload);
+    return { tokens, user };
   }
 
   async resendVerification(email: string) {
@@ -67,7 +78,8 @@ export class AuthService {
     if (rows[0].is_verified) throw Object.assign(new Error('Email already verified'), { status: 400 });
 
     const otp = await generateOtp(email);
-    return { email, otp, userId: rows[0].id };
+    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
+    return { message: 'Verification code resent.' as const };
   }
 
   async login(input: LoginInput) {
@@ -85,16 +97,20 @@ export class AuthService {
     const valid = await bcrypt.compare(input.password, user.password_hash);
     if (!valid) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
 
-    // Generate login OTP and a short-lived token that ties this login attempt to the OTP
+    // Generate login OTP — store in Redis, send via notification channel only
     const login_token = randomUUID();
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 1000000).toString();
     await redis.set(
       `login:${login_token}`,
       JSON.stringify({ userId: user.id, role: user.role, email: user.email, otp }),
       'EX', LOGIN_OTP_TTL
     );
 
-    return { requiresOtp: true as const, login_token, email: user.email, userId: user.id, otp };
+    // Fire-and-forget — don't block the response waiting for notification delivery
+    notificationsService.sendOtp(user.id, user.email, otp).catch(() => {});
+
+    // OTP is never returned to client — sent only via notification channel
+    return { requiresOtp: true as const, login_token };
   }
 
   async resendLoginOtp(login_token: string) {
@@ -102,7 +118,7 @@ export class AuthService {
     if (!raw) throw Object.assign(new Error('Session expired. Please log in again.'), { status: 400 });
 
     const pending = JSON.parse(raw) as { userId: string; role: string; email: string; otp: string };
-    const newOtp  = Math.floor(100000 + Math.random() * 900000).toString();
+    const newOtp  = randomInt(100000, 1000000).toString();
 
     await redis.set(
       `login:${login_token}`,
@@ -130,11 +146,9 @@ export class AuthService {
     const user = rows[0];
 
     const tokenPayload = { sub: user.id, role: user.role };
+    const tokens = await this._issueTokenPair(tokenPayload);
     return {
-      tokens: {
-        access_token:  signAccessToken(tokenPayload),
-        refresh_token: signRefreshToken(tokenPayload),
-      },
+      tokens,
       user: {
         id:           user.id,
         email:        user.email,
@@ -147,6 +161,12 @@ export class AuthService {
     };
   }
 
+  /**
+   * Refresh token rotation:
+   * - Verify the token, check it hasn't been used before (reuse = theft).
+   * - If reused, revoke the entire family (all tokens for that user/session).
+   * - Issue a fresh pair with the same family so the chain continues.
+   */
   async refresh(refreshToken: string) {
     let payload;
     try {
@@ -154,11 +174,71 @@ export class AuthService {
     } catch {
       throw Object.assign(new Error('Invalid or expired refresh token'), { status: 401 });
     }
+
+    const family = payload.family;
+    const jti = payload.jti;
+    const userId = payload.sub;
+
+    if (family) {
+      // Check family state in Redis
+      const storedJti = await redis.get(`refresh_family:${userId}:${family}`);
+
+      if (!storedJti) {
+        // Family missing: either expired or already revoked — reject
+        // Revoke all families for this user to be safe (possible token theft)
+        await this._revokeAllRefreshFamilies(userId);
+        throw Object.assign(new Error('Token family revoked. Please re-authenticate.'), { status: 401 });
+      }
+
+      if (storedJti !== jti) {
+        // Reuse detected! The token presented was already used (stored JTI is different).
+        // This is a strong signal of token theft — revoke everything.
+        await this._revokeAllRefreshFamilies(userId);
+        throw Object.assign(new Error('Token reuse detected. All sessions revoked.'), { status: 401 });
+      }
+
+      // Valid rotation: mark old jti as used, issue new tokens in same family
+      const newTokenPayload = { sub: payload.sub, role: payload.role as UserRole };
+      const newAccessToken  = signAccessToken(newTokenPayload);
+      const newRefreshToken = signRefreshToken(newTokenPayload, family);
+
+      // Update family to point to the NEW jti (extract from new refresh token)
+      const newPayload = verifyRefreshToken(newRefreshToken);
+      const refreshTtl = await this._refreshTokenTtlSeconds();
+      await redis.set(`refresh_family:${userId}:${family}`, newPayload.jti, 'EX', refreshTtl);
+
+      return { access_token: newAccessToken, refresh_token: newRefreshToken };
+    }
+
+    // Legacy path: token has no family (shouldn't happen after migration, but handle gracefully)
     const tokenPayload = { sub: payload.sub, role: payload.role };
-    return {
-      access_token:  signAccessToken(tokenPayload),
-      refresh_token: signRefreshToken(tokenPayload),
-    };
+    const tokens = await this._issueTokenPair(tokenPayload);
+    return tokens;
+  }
+
+  /**
+   * Logout: blocklist the access token by jti and revoke the refresh family.
+   */
+  async logout(accessToken: string, refreshToken?: string) {
+    // Blocklist the access token for its remaining lifetime
+    try {
+      const atPayload = verifyAccessToken(accessToken);
+      await redis.set(`blocklist:${atPayload.jti}`, '1', 'EX', accessTokenTtlSeconds());
+    } catch {
+      // Access token invalid/expired — nothing to blocklist
+    }
+
+    // Revoke refresh token family
+    if (refreshToken) {
+      try {
+        const rtPayload = verifyRefreshToken(refreshToken);
+        if (rtPayload.family) {
+          await this._revokeRefreshFamily(rtPayload.sub, rtPayload.family);
+        }
+      } catch {
+        // Refresh token already invalid — fine
+      }
+    }
   }
 
   async googleAuth(idToken: string) {
@@ -172,7 +252,6 @@ export class AuthService {
 
     const { sub: googleId, email, given_name, family_name, picture } = payload;
 
-    // Check for existing account by google_id first, then fall back to email
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, package_type, is_verified
        FROM users WHERE google_id = $1 OR (email IS NOT NULL AND email = $2)
@@ -182,20 +261,19 @@ export class AuthService {
 
     if (rows[0]) {
       const user = rows[0];
-      // Link google_id if signing in by email match for the first time
       await pool.query(
         'UPDATE users SET google_id = $1, updated_at = NOW() WHERE id = $2 AND google_id IS NULL',
         [googleId, user.id]
       );
       const tokenPayload = { sub: user.id, role: user.role };
+      const tokens = await this._issueTokenPair(tokenPayload);
       return {
         isNewUser: false as const,
-        tokens: { access_token: signAccessToken(tokenPayload), refresh_token: signRefreshToken(tokenPayload) },
+        tokens,
         user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name, role: user.role, package_type: user.package_type, is_verified: user.is_verified },
       };
     }
 
-    // New user — return profile so the app can ask for role
     return {
       isNewUser: true as const,
       profile: {
@@ -209,7 +287,6 @@ export class AuthService {
   }
 
   async googleComplete(input: GoogleCompleteInput) {
-    // Guard against duplicate registration
     const { rows: existing } = await pool.query(
       'SELECT id FROM users WHERE google_id = $1 OR email = $2',
       [input.googleId, input.email]
@@ -224,10 +301,8 @@ export class AuthService {
     );
     const user = rows[0];
     const tokenPayload = { sub: user.id, role: user.role };
-    return {
-      tokens: { access_token: signAccessToken(tokenPayload), refresh_token: signRefreshToken(tokenPayload) },
-      user,
-    };
+    const tokens = await this._issueTokenPair(tokenPayload);
+    return { tokens, user };
   }
 
   async adminLogin(email: string, password: string) {
@@ -244,18 +319,24 @@ export class AuthService {
     if (!valid) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
 
     const tokenPayload = { sub: user.id, role: user.role };
+    const tokens = await this._issueTokenPair(tokenPayload);
     return {
-      tokens: {
-        access_token:  signAccessToken(tokenPayload),
-        refresh_token: signRefreshToken(tokenPayload),
-      },
+      tokens,
       user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name, role: user.role },
     };
   }
 
   async requestPasswordReset(email: string) {
+    const { rows } = await pool.query(
+      'SELECT id FROM users WHERE email = $1', [email]
+    );
+    if (!rows[0]) {
+      // User not found — return gracefully to prevent email enumeration
+      return { message: 'If that email is registered, a reset code has been sent.' as const };
+    }
     const otp = await generateOtp(email);
-    return { email, otp };
+    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
+    return { message: 'If that email is registered, a reset code has been sent.' as const };
   }
 
   async resetPassword(input: ResetPasswordInput) {
@@ -268,6 +349,56 @@ export class AuthService {
       [password_hash, input.email]
     );
     if (!rows[0]) throw Object.assign(new Error('User not found'), { status: 404 });
+
+    // Invalidate all refresh families on password reset
+    await this._revokeAllRefreshFamilies(rows[0].id);
+
     return { reset: true };
+  }
+
+  // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Issues a new access + refresh token pair with rotation tracking.
+   * Creates a fresh refresh token family in Redis.
+   */
+  private async _issueTokenPair(payload: { sub: string; role: UserRole }) {
+    const accessToken  = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload); // creates new family
+
+    const rtPayload = verifyRefreshToken(refreshToken);
+    const refreshTtl = await this._refreshTokenTtlSeconds();
+    await redis.set(
+      `refresh_family:${payload.sub}:${rtPayload.family}`,
+      rtPayload.jti,
+      'EX', refreshTtl,
+    );
+
+    return { access_token: accessToken, refresh_token: refreshToken };
+  }
+
+  private async _revokeRefreshFamily(userId: string, family: string) {
+    await redis.del(`refresh_family:${userId}:${family}`);
+  }
+
+  private async _revokeAllRefreshFamilies(userId: string) {
+    const keys = await redis.keys(`refresh_family:${userId}:*`);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  }
+
+  private async _refreshTokenTtlSeconds(): Promise<number> {
+    const raw = process.env.JWT_REFRESH_EXPIRES || '30d';
+    const m = raw.match(/^(\d+)([smhd])$/);
+    if (!m) return 2592000; // default 30 days
+    const v = Number(m[1]);
+    switch (m[2]) {
+      case 's': return v;
+      case 'm': return v * 60;
+      case 'h': return v * 3600;
+      case 'd': return v * 86400;
+      default:  return 2592000;
+    }
   }
 }

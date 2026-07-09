@@ -8,12 +8,17 @@ export class AdminService {
 
   async listUsers(page = 1, limit = 30, role?: string) {
     const offset = (page - 1) * limit;
-    const where  = role ? `WHERE role = '${role}'` : '';
+    const params: any[] = [limit, offset];
+    let where = '';
+    if (role) {
+      where = 'WHERE role = $3';
+      params.push(role);
+    }
     const { rows } = await pool.query(
       `SELECT id, first_name, last_name, phone_number, email, role,
               package_type, is_verified, is_active, created_at
        FROM users ${where} ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      params
     );
     return rows;
   }
@@ -98,14 +103,19 @@ export class AdminService {
 
   async listAllProperties(page = 1, limit = 50, status?: string) {
     const offset = (page - 1) * limit;
-    const where  = status ? `WHERE p.approval_status = '${status}'` : '';
+    const params: any[] = [limit, offset];
+    let where = '';
+    if (status) {
+      where = 'WHERE p.approval_status = $3';
+      params.push(status);
+    }
     const { rows } = await pool.query(
       `SELECT p.*, u.first_name AS landlord_first, u.last_name AS landlord_last, u.phone_number
        FROM properties p
        JOIN users u ON u.id = p.landlord_id
        ${where}
        ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      params
     );
     return rows;
   }
@@ -199,7 +209,12 @@ export class AdminService {
 
   async listTransactions(page = 1, limit = 50, status?: string) {
     const offset = (page - 1) * limit;
-    const where  = status ? `WHERE pt.status = '${status}'` : '';
+    const params: any[] = [limit, offset];
+    let where = '';
+    if (status) {
+      where = 'WHERE pt.status = $3';
+      params.push(status);
+    }
     const { rows } = await pool.query(
       `SELECT pt.*, ps.due_date, ps.period_start, ps.period_end,
               tu.first_name AS tenant_first, tu.last_name AS tenant_last,
@@ -210,7 +225,7 @@ export class AdminService {
        JOIN users lu ON lu.id = pt.landlord_id
        ${where}
        ORDER BY pt.created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
+      params
     );
     return rows;
   }

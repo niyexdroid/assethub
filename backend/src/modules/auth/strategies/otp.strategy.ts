@@ -1,9 +1,10 @@
+import { randomInt } from 'crypto';
 import { redis } from '../../../config/redis';
 
 const OTP_TTL = 600; // 10 minutes
 
 export async function generateOtp(identifier: string): Promise<string> {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
   await redis.set(`otp:${identifier}`, otp, 'EX', OTP_TTL);
   return otp;
 }

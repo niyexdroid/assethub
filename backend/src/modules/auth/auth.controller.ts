@@ -1,18 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { pool } from '../../config/database';
 import { registerSchema, loginSchema, loginVerifySchema, googleAuthSchema, googleCompleteSchema, refreshSchema, resetRequestSchema, resetPasswordSchema, verifyEmailSchema, resendVerificationSchema } from './auth.validators';
 
-const svc      = new AuthService();
-const notifSvc = new NotificationsService();
+const svc = new AuthService();
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const input  = registerSchema.parse(req.body);
-    const { email, otp } = await svc.register(input);
-    const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    notifSvc.sendOtp(rows[0].id, email, otp).catch(() => {});
+    const { email } = await svc.register(input);
     res.status(201).json({ email });
   } catch (err) { return next(err); }
 }
@@ -28,18 +23,15 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
 export async function resendVerification(req: Request, res: Response, next: NextFunction) {
   try {
     const { email } = resendVerificationSchema.parse(req.body);
-    const { otp, userId } = await svc.resendVerification(email);
-    notifSvc.sendOtp(userId, email, otp).catch(() => {});
-    res.json({ message: 'Verification code resent.' });
+    const result = await svc.resendVerification(email);
+    res.json(result);
   } catch (err) { return next(err); }
 }
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const input  = loginSchema.parse(req.body);
-    const { requiresOtp, login_token, email, userId, otp } = await svc.login(input);
-    // Fire-and-forget — don't block the response waiting for SMTP
-    notifSvc.sendOtp(userId, email, otp).catch(() => {});
+    const { requiresOtp, login_token } = await svc.login(input);
     res.json({ requiresOtp, login_token });
   } catch (err) { return next(err); }
 }
@@ -88,13 +80,8 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
 export async function forgotPassword(req: Request, res: Response, next: NextFunction) {
   try {
     const { email } = resetRequestSchema.parse(req.body);
-    const { rows }  = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (rows[0]) {
-      const { otp } = await svc.requestPasswordReset(email);
-      notifSvc.sendOtp(rows[0].id, email, otp).catch(() => {});
-    }
-    // Always return success to prevent email enumeration
-    res.json({ message: 'If that email is registered, a reset code has been sent.' });
+    const result = await svc.requestPasswordReset(email);
+    res.json(result);
   } catch (err) { return next(err); }
 }
 
@@ -114,6 +101,12 @@ export async function adminLogin(req: Request, res: Response, next: NextFunction
   } catch (err) { return next(err); }
 }
 
-export async function logout(_req: Request, res: Response) {
-  res.json({ message: 'Logged out' });
+export async function logout(req: Request, res: Response, next: NextFunction) {
+  try {
+    const header = req.headers.authorization;
+    const accessToken = header?.startsWith('Bearer ') ? header.slice(7) : '';
+    const { refresh_token } = req.body || {};
+    await svc.logout(accessToken, refresh_token);
+    res.json({ message: 'Logged out' });
+  } catch (err) { return next(err); }
 }
