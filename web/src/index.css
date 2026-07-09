@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 246 248 250;
+    --foreground: 28 33 40;
+    --card: 255 255 255;
+    --card-foreground: 28 33 40;
+    --popover: 255 255 255;
+    --popover-foreground: 28 33 40;
+    --primary: 10 110 78;
+    --primary-foreground: 255 255 255;
+    --secondary: 238 241 244;
+    --secondary-foreground: 28 33 40;
+    --muted: 238 241 244;
+    --muted-foreground: 140 149 159;
+    --accent: 244 168 37;
+    --accent-foreground: 0 0 0;
+    --destructive: 207 34 46;
+    --destructive-foreground: 255 255 255;
+    --border: 208 215 222;
+    --input: 208 215 222;
+    --ring: 10 110 78;
+    --radius: 0.75rem;
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 87 96 106;
+    --sidebar-primary: 10 110 78;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 238 241 244;
+    --sidebar-accent-foreground: 28 33 40;
+    --sidebar-border: 208 215 222;
+    --sidebar-ring: 10 110 78;
+  }
+
+  .dark {
+    --background: 13 17 23;
+    --foreground: 240 246 252;
+    --card: 22 27 34;
+    --card-foreground: 240 246 252;
+    --popover: 22 27 34;
+    --popover-foreground: 240 246 252;
+    --primary: 10 110 78;
+    --primary-foreground: 255 255 255;
+    --secondary: 33 38 45;
+    --secondary-foreground: 240 246 252;
+    --muted: 33 38 45;
+    --muted-foreground: 139 148 158;
+    --accent: 244 168 37;
+    --accent-foreground: 0 0 0;
+    --destructive: 230 57 70;
+    --destructive-foreground: 255 255 255;
+    --border: 48 54 61;
+    --input: 48 54 61;
+    --ring: 18 163 118;
+    --sidebar-background: 22 27 34;
+    --sidebar-foreground: 139 148 158;
+    --sidebar-primary: 10 110 78;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 33 38 45;
+    --sidebar-accent-foreground: 240 246 252;
+    --sidebar-border: 48 54 61;
+    --sidebar-ring: 18 163 118;
+  }
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--border));
+  }
+  body {
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
