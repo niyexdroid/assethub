@@ -7,12 +7,10 @@ interface AuthState {
   token: string | null
   refreshToken: string | null
   isAuthenticated: boolean
-  isLoading: boolean
 
   setAuth: (user: User, token: string, refreshToken?: string) => void
   updateUser: (user: User) => void
   clearAuth: () => void
-  setLoading: (loading: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -22,7 +20,6 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       refreshToken: null,
       isAuthenticated: false,
-      isLoading: true,
 
       setAuth: (user, token, refreshToken) =>
         set({
@@ -30,7 +27,6 @@ export const useAuthStore = create<AuthState>()(
           token,
           refreshToken: refreshToken ?? null,
           isAuthenticated: true,
-          isLoading: false,
         }),
 
       updateUser: (user) => set({ user }),
@@ -42,8 +38,6 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         }),
-
-      setLoading: (loading) => set({ isLoading: loading }),
     }),
     {
       name: 'assethub-auth',
@@ -52,15 +46,14 @@ export const useAuthStore = create<AuthState>()(
         token: s.token,
         refreshToken: s.refreshToken,
       }),
-      onRehydrateStorage: () => (state) => {
-        // After rehydration: set authenticated if token exists, and always finish loading
-        const hydrated = state ?? { user: null, token: null, refreshToken: null }
-        useAuthStore.setState({
-          ...hydrated,
-          isAuthenticated: !!hydrated.token,
-          isLoading: false,
-        })
-      },
+      // Use merge instead of onRehydrateStorage — the callback runs inside
+      // hydrate() which fires synchronously during create(), so referencing
+      // `useAuthStore` hits TDZ ("Cannot access before initialization").
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<Pick<AuthState, 'user' | 'token' | 'refreshToken'>>),
+        isAuthenticated: !!((persisted as { token?: unknown })?.token),
+      }),
     },
   ),
 )

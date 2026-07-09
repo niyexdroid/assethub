@@ -6,7 +6,6 @@ export function useAuth() {
     user: store.user,
     token: store.token,
     isAuthenticated: store.isAuthenticated,
-    isLoading: store.isLoading,
     login: store.setAuth,
     logout: store.clearAuth,
     updateUser: store.updateUser,
