@@ -20,7 +20,10 @@ import userRoutes  from './modules/users/users.routes';
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
 app.use(cors({ origin: env.NODE_ENV === 'production' ? '*' : '*' }));
 app.use(express.json());
 
