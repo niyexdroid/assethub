@@ -20,33 +20,41 @@ export function GoogleSignInButton({ label = 'Continue with Google', onError }: 
   const login = useGoogleLogin({
     flow: 'auth-code',
     onSuccess: async (response) => {
+      console.log('[GoogleAuth] onSuccess fired, response:', response)
       setLoading(true)
       try {
         // Auth-code flow returns `code` — send to backend for exchange
         const code = response.code
         if (!code) {
+          console.log('[GoogleAuth] No code in response')
           onError?.('No authorization code returned from Google.')
           return
         }
+        console.log('[GoogleAuth] Got code, sending to backend...')
         const result = await authService.googleAuthCode(code)
+        console.log('[GoogleAuth] Backend response:', JSON.stringify(result, null, 2))
         if (result.isNewUser) {
+          console.log('[GoogleAuth] New user, navigating to /google-complete')
           // First-time Google user — need to pick role
           const { googleId, email, first_name, last_name, avatar_url } = result.profile
           const params = new URLSearchParams({ googleId, email, first_name, last_name })
           if (avatar_url) params.set('avatar_url', avatar_url)
           navigate(`/google-complete?${params.toString()}`)
         } else {
+          console.log('[GoogleAuth] Existing user, setting auth and navigating')
           // Existing user — sign in directly
           setAuth(result.user, result.tokens.access_token, result.tokens.refresh_token)
           navigate(result.user.role === 'landlord' ? '/landlord/dashboard' : '/home')
         }
       } catch (err) {
+        console.error('[GoogleAuth] Error:', err)
         onError?.(getErrorMessage(err))
       } finally {
         setLoading(false)
       }
     },
-    onError: () => {
+    onError: (err) => {
+      console.error('[GoogleAuth] Google OAuth error:', err)
       onError?.('Google sign-in failed. Please try again.')
     },
   })
