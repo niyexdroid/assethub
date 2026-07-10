@@ -1,4 +1,5 @@
 /// <reference path="./types/express.d.ts" />
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,8 +20,8 @@ import userRoutes  from './modules/users/users.routes';
 
 const app = express();
 
-app.use(helmet());
-app.use(cors({ origin: env.NODE_ENV === 'production' ? false : '*' }));
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: env.NODE_ENV === 'production' ? '*' : '*' }));
 app.use(express.json());
 
 // Global rate limiter
@@ -44,6 +45,16 @@ app.use('/api/v1/admin',        adminRoutes);
 app.use('/api/v1/users',        userRoutes);
 
 app.use(errorHandler);
+
+// Serve static web app in production
+if (env.NODE_ENV === 'production') {
+  const publicDir = path.join(__dirname, '..', 'public');
+  app.use(express.static(publicDir));
+  // SPA fallback — all unmatched GET routes serve index.html
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+}
 
 const PORT = Number(env.PORT);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
