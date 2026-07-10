@@ -17,7 +17,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 const notificationsService = new NotificationsService();
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 
 const LOGIN_OTP_TTL = 600; // 10 minutes
 
