@@ -249,10 +249,9 @@ export class AuthService {
 
     // If auth code provided, exchange it for tokens first
     if (code) {
-      const { tokens } = await googleClient.getToken({
-        code,
-        redirect_uri: redirectUri || 'postmessage',
-      });
+      const tokenOpts: any = { code };
+      if (redirectUri) tokenOpts.redirect_uri = redirectUri;
+      const { tokens } = await googleClient.getToken(tokenOpts);
       if (!tokens.id_token) {
         throw Object.assign(new Error('Failed to get ID token from auth code'), { status: 400 });
       }
