@@ -39,7 +39,7 @@ export default function TenancyDetail() {
       await tenanciesService.terminate(id)
       navigate('/landlord/tenancies')
     } catch (err) {
-      setTerminateError(err?.response?.data?.message ?? err?.message ?? 'Failed to terminate tenancy.')
+      setTerminateError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Failed to terminate tenancy.')
       setTerminating(false)
     }
   }

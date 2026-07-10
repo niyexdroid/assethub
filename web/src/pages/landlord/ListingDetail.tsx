@@ -55,7 +55,7 @@ export default function ListingDetail() {
       await propertiesService.update(id, { is_available: false })
       navigate('/landlord/listings')
     } catch (err) {
-      setDeleteError(err?.response?.data?.message ?? err?.message ?? 'Failed to remove listing.')
+      setDeleteError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Failed to remove listing.')
       setDeleting(false)
     }
   }
