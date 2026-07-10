@@ -48,6 +48,11 @@ export const authService = {
     return res.data
   },
 
+  googleAuthCode: async (code: string): Promise<GoogleAuthResponse> => {
+    const res = await api.post<GoogleAuthResponse>(API_ENDPOINTS.auth.google, { code, redirectUri: window.location.origin })
+    return res.data
+  },
+
   googleComplete: async (profile: GoogleCompleteRequest): Promise<AuthResponse> => {
     const res = await api.post<AuthResponse>(API_ENDPOINTS.auth.googleComplete, profile)
     return res.data

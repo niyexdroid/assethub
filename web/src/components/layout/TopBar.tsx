@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function TopBar({ onToggleSidebar, showSearch, searchValue, onSearchChange, searchPlaceholder }: Props) {
-  const { user, refreshToken, logout } = useAuthStore()
+  const { user, refreshToken, clearAuth } = useAuthStore()
   const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -23,7 +23,7 @@ export function TopBar({ onToggleSidebar, showSearch, searchValue, onSearchChang
   const handleLogout = async () => {
     // Fire-and-forget — revoke tokens on server, but always clear locally
     authService.logout(refreshToken ?? undefined).catch(() => {})
-    logout()
+    clearAuth()
     navigate('/login')
   }
 

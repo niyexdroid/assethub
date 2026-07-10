@@ -30,14 +30,6 @@ export default function TenancyScreen() {
   const pending = tenancies.filter((t) => t.status === 'pending')
   const past = tenancies.filter((t) => t.status === 'terminated' || t.status === 'declined')
 
-  const statusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-      case 'pending': return <Clock className="w-5 h-5 text-amber-500" />
-      default: return <XCircle className="w-5 h-5 text-muted-foreground" />
-    }
-  }
-
   if (loading) {
     return (
       <div className="p-6 max-w-4xl mx-auto space-y-4">
@@ -105,6 +97,14 @@ export default function TenancyScreen() {
       )}
     </div>
   )
+}
+
+const statusIcon = (status: string) => {
+  switch (status) {
+    case 'active': return <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+    case 'pending': return <Clock className="w-5 h-5 text-amber-500" />
+    default: return <XCircle className="w-5 h-5 text-muted-foreground" />
+  }
 }
 
 function TenancyCard({ tenancy }: { tenancy: T }) {

@@ -18,15 +18,17 @@ export function GoogleSignInButton({ label = 'Continue with Google', onError }: 
   const { setAuth } = useAuthStore()
 
   const login = useGoogleLogin({
+    flow: 'auth-code',
     onSuccess: async (response) => {
       setLoading(true)
       try {
-        const idToken = response.credential ?? (response as any).access_token
-        if (!idToken) {
-          onError?.('No credential returned from Google.')
+        // Auth-code flow returns `code` — send to backend for exchange
+        const code = response.code
+        if (!code) {
+          onError?.('No authorization code returned from Google.')
           return
         }
-        const result = await authService.googleAuth(idToken)
+        const result = await authService.googleAuthCode(code)
         if (result.isNewUser) {
           // First-time Google user — need to pick role
           const { googleId, email, first_name, last_name, avatar_url } = result.profile

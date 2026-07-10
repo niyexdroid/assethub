@@ -39,6 +39,13 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config
 
+    // Dev token: silently fail API calls, don't redirect to login
+    const stored = localStorage.getItem('assethub-auth')
+    const token = stored ? JSON.parse(stored).state?.token : null
+    if (token?.startsWith('dev-token-')) {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status !== 401 || original._retry || original.url?.includes('/auth/')) {
       return Promise.reject(error)
     }
@@ -56,7 +63,6 @@ api.interceptors.response.use(
     isRefreshing = true
 
     try {
-      const stored = localStorage.getItem('assethub-auth')
       const refreshToken = stored ? JSON.parse(stored).state?.refreshToken : null
 
       if (!refreshToken) {

@@ -31,7 +31,7 @@ export default function DashboardScreen() {
       ])
       if (props.status === 'fulfilled') setProperties(props.value)
       if (tens.status === 'fulfilled') setTenancies(tens.value)
-      if (pays.status === 'fulfilled') setPayments(Array.isArray(pays.value) ? pays.value : pays.value?.data ?? [])
+      if (pays.status === 'fulfilled') setPayments(pays.value as PaymentTransaction[])
       if (comps.status === 'fulfilled') setComplaints(comps.value)
     } catch {
       setError('Could not load dashboard.')

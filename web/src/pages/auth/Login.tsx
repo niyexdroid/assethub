@@ -125,6 +125,44 @@ export function Login() {
         Don't have an account?{' '}
         <Link to="/register" className="text-primary font-medium hover:underline">Create one</Link>
       </p>
+
+      {/* ── Dev quick access ────────────────────────── */}
+      <div className="mt-6 pt-5 border-t border-border">
+        <p className="text-xs text-muted-foreground text-center mb-3">⚡ Dev quick access</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const user = { id: 'dev-landlord-1', first_name: 'Alex', last_name: 'Johnson', email: 'landlord@test.com', role: 'landlord' as const, is_verified: true }
+              const token = 'dev-token-landlord'
+              const refreshToken = 'dev-refresh-landlord'
+              // 1. Update in-memory store
+              useAuthStore.getState().setAuth(user, token, refreshToken)
+              // 2. Write directly to localStorage to guarantee it's there before navigation
+              localStorage.setItem('assethub-auth', JSON.stringify({ state: { user, token, refreshToken }, version: 0 }))
+              // 3. Navigate — AuthGate will see the store, RequireAuth reads localStorage on mount
+              navigate('/landlord/dashboard')
+            }}
+            className="h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-sm font-medium hover:bg-orange-500/20 transition-colors"
+          >
+            🏠 Landlord
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const user = { id: 'dev-tenant-1', first_name: 'Sarah', last_name: 'Okafor', email: 'tenant@test.com', role: 'tenant' as const, is_verified: true }
+              const token = 'dev-token-tenant'
+              const refreshToken = 'dev-refresh-tenant'
+              useAuthStore.getState().setAuth(user, token, refreshToken)
+              localStorage.setItem('assethub-auth', JSON.stringify({ state: { user, token, refreshToken }, version: 0 }))
+              navigate('/home')
+            }}
+            className="h-10 rounded-xl bg-brand-green/10 border border-brand-green/20 text-brand-green-dark dark:text-brand-green-light text-sm font-medium hover:bg-brand-green/20 transition-colors"
+          >
+            🔑 Tenant
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

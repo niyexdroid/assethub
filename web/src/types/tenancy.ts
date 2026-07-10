@@ -1,3 +1,5 @@
+import type { Property } from './property'
+
 export interface Tenancy {
   id: string
   property_id: string

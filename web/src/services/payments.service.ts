@@ -2,6 +2,8 @@ import { api } from '@/lib/api'
 import { API_ENDPOINTS } from '@/lib/api.endpoints'
 import type { PaymentScheduleItem, PaymentTransaction } from '@/types/payment'
 
+export type { PaymentTransaction, PaymentScheduleItem }
+
 export const paymentsService = {
   initialize: async (tenancyId: string, amount: number): Promise<{ authorization_url: string; reference: string }> => {
     const res = await api.post(API_ENDPOINTS.payments.initialize, { tenancy_id: tenancyId, amount })

@@ -1,80 +1,166 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@layer base {
-  :root {
-    --background: 246 248 250;
-    --foreground: 28 33 40;
-    --card: 255 255 255;
-    --card-foreground: 28 33 40;
-    --popover: 255 255 255;
-    --popover-foreground: 28 33 40;
-    --primary: 10 110 78;
-    --primary-foreground: 255 255 255;
-    --secondary: 238 241 244;
-    --secondary-foreground: 28 33 40;
-    --muted: 238 241 244;
-    --muted-foreground: 140 149 159;
-    --accent: 244 168 37;
-    --accent-foreground: 0 0 0;
-    --destructive: 207 34 46;
-    --destructive-foreground: 255 255 255;
-    --border: 208 215 222;
-    --input: 208 215 222;
-    --ring: 10 110 78;
-    --radius: 0.75rem;
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 87 96 106;
-    --sidebar-primary: 10 110 78;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 238 241 244;
-    --sidebar-accent-foreground: 28 33 40;
-    --sidebar-border: 208 215 222;
-    --sidebar-ring: 10 110 78;
-  }
+/* ── Class-based dark mode (Tailwind v4) ─────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  .dark {
-    --background: 13 17 23;
-    --foreground: 240 246 252;
-    --card: 22 27 34;
-    --card-foreground: 240 246 252;
-    --popover: 22 27 34;
-    --popover-foreground: 240 246 252;
-    --primary: 10 110 78;
-    --primary-foreground: 255 255 255;
-    --secondary: 33 38 45;
-    --secondary-foreground: 240 246 252;
-    --muted: 33 38 45;
-    --muted-foreground: 139 148 158;
-    --accent: 244 168 37;
-    --accent-foreground: 0 0 0;
-    --destructive: 230 57 70;
-    --destructive-foreground: 255 255 255;
-    --border: 48 54 61;
-    --input: 48 54 61;
-    --ring: 18 163 118;
-    --sidebar-background: 22 27 34;
-    --sidebar-foreground: 139 148 158;
-    --sidebar-primary: 10 110 78;
-    --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 33 38 45;
-    --sidebar-accent-foreground: 240 246 252;
-    --sidebar-border: 48 54 61;
-    --sidebar-ring: 18 163 118;
-  }
+/* ── Design tokens ═════════════════════════════════════════════════════ */
+@theme {
+  /* Font */
+  --font-family-sans: 'Poppins', system-ui, sans-serif;
+
+  /* Heading sizes */
+  --font-size-h1: 28px;
+  --font-size-h1--line-height: 36px;
+  --font-size-h1--font-weight: 800;
+
+  --font-size-h2: 22px;
+  --font-size-h2--line-height: 30px;
+  --font-size-h2--font-weight: 700;
+
+  --font-size-h3: 18px;
+  --font-size-h3--line-height: 26px;
+  --font-size-h3--font-weight: 600;
+
+  --font-size-h4: 16px;
+  --font-size-h4--line-height: 24px;
+  --font-size-h4--font-weight: 600;
+
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* ── Semantic color tokens (shadcn/ui convention) ────────────────── */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Sidebar tokens */
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* Brand colors (direct hex, not CSS variable) */
+  --color-brand-green: #1d8a8a;
+  --color-brand-green-light: hsl(180 60% 38%);
+  --color-brand-green-dark: #166a6a;
+  --color-brand-orange: #f97316;
+  --color-brand-tint: #f8fafc;
+
+  --color-surface-dark: hsl(215 28% 11%);
+  --color-surface-darker: hsl(216 28% 7%);
+  --color-surface-raised: hsl(215 25% 17%);
+  --color-surface-light: hsl(0 0% 100%);
+  --color-surface-light-raised: hsl(210 40% 96.1%);
 }
 
+/* ── Light mode ─────────────────────────────────────────────────────── */
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 180 65% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222 47% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222 47% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 180 65% 33%;
+  --radius: 0.75rem;
+
+  /* Sidebar — light */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 215.4 16.3% 46.9%;
+  --sidebar-primary: 180 65% 33%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 222 47% 11.2%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 221 83% 53%;
+}
+
+/* ── Dark mode ──────────────────────────────────────────────────────── */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 180 60% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 180 60% 50%;
+
+  /* Sidebar — dark */
+  --sidebar-background: 222.2 84% 4.9%;
+  --sidebar-foreground: 215 20.2% 65.1%;
+  --sidebar-primary: 180 60% 50%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 217.2 32.6% 17.5%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217.2 32.6% 17.5%;
+  --sidebar-ring: 212.7 26.8% 83.9%;
+}
+
+/* ── Base layer ─────────────────────────────────────────────────────── */
 @layer base {
   * {
-    border-color: rgb(var(--border));
+    border-color: hsl(var(--border));
   }
   body {
-    background-color: rgb(var(--background));
-    color: rgb(var(--foreground));
-    font-family: 'Poppins', system-ui, sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-family-sans);
+    font-feature-settings: 'rlig' 1, 'calt' 1;
   }
 }

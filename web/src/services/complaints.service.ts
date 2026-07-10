@@ -2,6 +2,8 @@ import { api } from '@/lib/api'
 import { API_ENDPOINTS } from '@/lib/api.endpoints'
 import type { Complaint, ComplaintMessage } from '@/types/complaint'
 
+export type { Complaint, ComplaintMessage }
+
 export const complaintsService = {
   list: async (): Promise<Complaint[]> => {
     const res = await api.get(API_ENDPOINTS.complaints.list)
