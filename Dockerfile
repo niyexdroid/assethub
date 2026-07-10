@@ -1,5 +1,7 @@
 # Stage 1: Build web app
 FROM node:20-alpine AS web-builder
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 WORKDIR /web
 COPY web/package*.json ./
 RUN npm ci
