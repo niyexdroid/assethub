@@ -27,6 +27,11 @@ import ComplaintsScreen from '@/pages/tenant/Complaints'
 
 // Landlord pages
 import DashboardScreen from '@/pages/landlord/Dashboard'
+import MyListings from '@/pages/landlord/MyListings'
+import CreateListing from '@/pages/landlord/CreateListing'
+import ListingDetail from '@/pages/landlord/ListingDetail'
+import TenanciesList from '@/pages/landlord/TenanciesList'
+import TenancyDetail from '@/pages/landlord/TenancyDetail'
 
 // Placeholder for pages not yet built
 import { Placeholder } from '@/pages/Placeholder'
@@ -84,11 +89,11 @@ export function App() {
               <Route element={<LandlordLayout />}>
                 <Route path="/landlord" element={<Navigate to="/landlord/dashboard" replace />} />
                 <Route path="/landlord/dashboard" element={<DashboardScreen />} />
-                <Route path="/landlord/listings" element={<Placeholder title="My Listings" />} />
-                <Route path="/landlord/listings/create" element={<Placeholder title="Create Listing" />} />
-                <Route path="/landlord/listings/:id" element={<Placeholder title="Listing Detail" />} />
-                <Route path="/landlord/tenancies" element={<Placeholder title="Tenancies" />} />
-                <Route path="/landlord/tenancies/:id" element={<Placeholder title="Tenancy Detail" />} />
+                <Route path="/landlord/listings" element={<MyListings />} />
+                <Route path="/landlord/listings/create" element={<CreateListing />} />
+                <Route path="/landlord/listings/:id" element={<ListingDetail />} />
+                <Route path="/landlord/tenancies" element={<TenanciesList />} />
+                <Route path="/landlord/tenancies/:id" element={<TenancyDetail />} />
                 <Route path="/landlord/payments" element={<Placeholder title="Payments" />} />
                 <Route path="/landlord/complaints" element={<Placeholder title="Complaints" />} />
                 <Route path="/landlord/complaints/:id" element={<Placeholder title="Complaint Detail" />} />
