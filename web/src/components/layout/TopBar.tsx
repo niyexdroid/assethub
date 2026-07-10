@@ -36,7 +36,7 @@ export function TopBar({ onToggleSidebar, showSearch, searchValue, onSearchChang
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <Link to="/home" className="flex items-center gap-2">
+        <Link to={user?.role === 'landlord' ? '/landlord/dashboard' : '/home'} className="flex items-center gap-2">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
             <Home className="w-4 h-4 text-primary-foreground" />
           </div>

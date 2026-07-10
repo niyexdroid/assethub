@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
+
+const AUTH_PAGES = ['/login', '/register', '/verify-email', '/verify-login-otp',
+  '/forgot-password', '/reset-password', '/google-complete']
 
 export function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Track hydration using React state + persist API subscription,
   // NOT the store's own _hasHydrated — that may not trigger re-renders
@@ -28,18 +32,16 @@ export function AuthGate() {
   useEffect(() => {
     if (!ready) return
 
-    if (!isAuthenticated) {
-      // Allow auth pages through
-      return
+    if (isAuthenticated && AUTH_PAGES.includes(location.pathname)) {
+      // Only redirect when on an auth page (login, register, etc.)
+      // Don't redirect when already on an authenticated page
+      if (user?.role === 'landlord') {
+        navigate('/landlord/dashboard', { replace: true })
+      } else {
+        navigate('/home', { replace: true })
+      }
     }
-
-    // Redirect to correct dashboard based on role
-    if (user?.role === 'landlord') {
-      navigate('/landlord/dashboard', { replace: true })
-    } else {
-      navigate('/home', { replace: true })
-    }
-  }, [isAuthenticated, ready, user?.role, navigate])
+  }, [isAuthenticated, ready, user?.role, location.pathname, navigate])
 
   if (!ready) {
     return (
