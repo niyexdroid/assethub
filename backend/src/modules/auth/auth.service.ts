@@ -241,11 +241,28 @@ export class AuthService {
     }
   }
 
-  async googleAuth(idToken: string) {
+  async googleAuth(idToken?: string, code?: string, redirectUri?: string) {
     const validAudiences = [
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_ANDROID_CLIENT_ID,
     ].filter(Boolean) as string[];
+
+    // If auth code provided, exchange it for tokens first
+    if (code) {
+      const { tokens } = await googleClient.getToken({
+        code,
+        redirect_uri: redirectUri || 'postmessage',
+      });
+      if (!tokens.id_token) {
+        throw Object.assign(new Error('Failed to get ID token from auth code'), { status: 400 });
+      }
+      idToken = tokens.id_token;
+    }
+
+    if (!idToken) {
+      throw Object.assign(new Error('No ID token provided'), { status: 400 });
+    }
+
     const ticket  = await googleClient.verifyIdToken({ idToken, audience: validAudiences });
     const payload = ticket.getPayload();
     if (!payload?.sub) throw Object.assign(new Error('Invalid Google token'), { status: 400 });
