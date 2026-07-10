@@ -117,6 +117,23 @@ export function ListingForm({
       return
     }
 
+    if (form.bedrooms && Number(form.bedrooms) < 0) {
+      setError('Bedrooms cannot be negative.')
+      return
+    }
+    if (form.bathrooms && Number(form.bathrooms) < 0) {
+      setError('Bathrooms cannot be negative.')
+      return
+    }
+    if (form.caution_fee && Number(form.caution_fee) < 0) {
+      setError('Caution fee cannot be negative.')
+      return
+    }
+    if (form.agency_fee && Number(form.agency_fee) < 0) {
+      setError('Agency fee cannot be negative.')
+      return
+    }
+
     try {
       await onSubmit(form)
     } catch (err: any) {

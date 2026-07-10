@@ -38,6 +38,7 @@ export default function TenanciesList() {
 
   const filtered = useMemo(() => {
     if (tab === 'all') return tenancies
+    if (tab === 'terminated') return tenancies.filter((t) => t.status === 'terminated' || t.status === 'declined')
     return tenancies.filter((t) => t.status === tab)
   }, [tenancies, tab])
 

@@ -15,6 +15,7 @@ export default function ListingDetail() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const load = useCallback(async () => {
@@ -49,10 +50,12 @@ export default function ListingDetail() {
   const handleDelete = async () => {
     if (!id) return
     setDeleting(true)
+    setDeleteError('')
     try {
       await propertiesService.update(id, { is_available: false })
       navigate('/landlord/listings')
-    } catch {
+    } catch (err) {
+      setDeleteError(err?.response?.data?.message ?? err?.message ?? 'Failed to remove listing.')
       setDeleting(false)
     }
   }
@@ -74,20 +77,23 @@ export default function ListingDetail() {
   if (editing) {
     const defaults: Partial<PropertyFormData> = {
       title: property.title,
-      listing_type: (property as any).listing_type ?? 'standard',
+      listing_type: property.listing_type ?? 'standard',
       property_type: property.property_type,
       description: property.description ?? '',
       address: property.address,
       lga: property.lga,
+      nearest_landmark: property.nearest_landmark ?? '',
       bedrooms: property.bedrooms != null ? String(property.bedrooms) : '',
       bathrooms: property.bathrooms != null ? String(property.bathrooms) : '',
-      monthly_rent: (property as any).monthly_rent ? String((property as any).monthly_rent) : '',
-      yearly_rent: property.rent_amount ? String(property.rent_amount) : '',
+      tenancy_mode: property.tenancy_mode ?? 'yearly',
+      monthly_rent: property.monthly_rent ? String(property.monthly_rent) : '',
+      yearly_rent: property.yearly_rent ? String(property.yearly_rent) : property.rent_amount ? String(property.rent_amount) : '',
       caution_fee: property.caution_fee != null ? String(property.caution_fee) : '',
       agency_fee: property.agency_fee != null ? String(property.agency_fee) : '',
-      available_units: '1',
+      available_units: property.available_units != null ? String(property.available_units) : '1',
       amenities: property.amenities ?? [],
-      rules: '',
+      gender_preference: property.gender_preference ?? 'any',
+      rules: property.rules ?? '',
     }
     return (
       <div className="p-6">
@@ -199,10 +205,10 @@ export default function ListingDetail() {
             <p className="text-sm font-semibold flex items-center gap-1"><Bath className="w-4 h-4" /> {property.bathrooms}</p>
           </div>
         )}
-        {(property as any).available_units != null && (
+        {property.available_units != null && (
           <div className="rounded-xl border bg-card p-4">
             <p className="text-xs text-muted-foreground mb-1">Available Units</p>
-            <p className="text-sm font-semibold">{(property as any).available_units}</p>
+            <p className="text-sm font-semibold">{property.available_units}</p>
           </div>
         )}
       </div>
@@ -269,6 +275,9 @@ export default function ListingDetail() {
             <p className="text-sm text-muted-foreground mb-6">
               Are you sure you want to remove <strong>{property.title}</strong>? This action can be reversed by editing the listing.
             </p>
+            {deleteError && (
+              <p className="text-sm text-destructive mb-4 p-2 rounded-lg bg-destructive/10">{deleteError}</p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowDeleteConfirm(false)}

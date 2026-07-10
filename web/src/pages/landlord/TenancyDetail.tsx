@@ -12,6 +12,7 @@ export default function TenancyDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [terminating, setTerminating] = useState(false)
+  const [terminateError, setTerminateError] = useState('')
   const [showTerminate, setShowTerminate] = useState(false)
 
   const load = useCallback(async () => {
@@ -33,12 +34,13 @@ export default function TenancyDetail() {
   const handleTerminate = async () => {
     if (!id) return
     setTerminating(true)
+    setTerminateError('')
     try {
       await tenanciesService.terminate(id)
       navigate('/landlord/tenancies')
-    } catch {
+    } catch (err) {
+      setTerminateError(err?.response?.data?.message ?? err?.message ?? 'Failed to terminate tenancy.')
       setTerminating(false)
-      setShowTerminate(false)
     }
   }
 
@@ -204,6 +206,9 @@ export default function TenancyDetail() {
             <p className="text-sm text-muted-foreground mb-6">
               Are you sure you want to terminate this tenancy? The tenant will be notified.
             </p>
+            {terminateError && (
+              <p className="text-sm text-destructive mb-4 p-2 rounded-lg bg-destructive/10">{terminateError}</p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowTerminate(false)}
