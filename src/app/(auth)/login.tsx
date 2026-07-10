@@ -19,7 +19,10 @@ import { getErrorMessage } from '../../services/api';
 import { useAuthStore } from '../../store/auth.store';
 import { LoginRequest } from '../../types/auth';
 
-GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID });
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+});
 
 export default function LoginScreen() {
   const { theme } = useTheme();

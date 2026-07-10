@@ -15,7 +15,10 @@ import { authService } from '../../services/auth.service';
 import { useAuthStore } from '../../store/auth.store';
 import { RegisterRequest } from '../../types/auth';
 
-GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID });
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+});
 
 const ROLES = [{ id: 'tenant', label: '🏠 I am a Tenant' }, { id: 'landlord', label: '🔑 I am a Landlord' }];
 const PKGS  = [{ id: 'standard', label: '🏙 Standard' }, { id: 'student', label: '🎓 Student' }];
