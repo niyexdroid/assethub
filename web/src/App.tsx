@@ -32,6 +32,7 @@ import CreateListing from '@/pages/landlord/CreateListing'
 import ListingDetail from '@/pages/landlord/ListingDetail'
 import TenanciesList from '@/pages/landlord/TenanciesList'
 import TenancyDetail from '@/pages/landlord/TenancyDetail'
+import Settings from '@/pages/Settings'
 
 // Placeholder for pages not yet built
 import { Placeholder } from '@/pages/Placeholder'
@@ -73,7 +74,7 @@ export function App() {
                 <Route path="/roommates/profile" element={<Placeholder title="Roommate Profile" />} />
                 <Route path="/roommates/requests" element={<Placeholder title="Requests" />} />
                 <Route path="/notifications" element={<Placeholder title="Notifications" />} />
-                <Route path="/settings" element={<Placeholder title="Settings" />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/kyc" element={<Placeholder title="KYC" />} />
                 <Route path="/kyc/bvn" element={<Placeholder title="KYC - BVN" />} />
                 <Route path="/kyc/nin" element={<Placeholder title="KYC - NIN" />} />
@@ -98,7 +99,7 @@ export function App() {
                 <Route path="/landlord/complaints" element={<Placeholder title="Complaints" />} />
                 <Route path="/landlord/complaints/:id" element={<Placeholder title="Complaint Detail" />} />
                 <Route path="/notifications" element={<Placeholder title="Notifications" />} />
-                <Route path="/settings" element={<Placeholder title="Settings" />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="/kyc" element={<Placeholder title="KYC" />} />
                 <Route path="/kyc/bvn" element={<Placeholder title="KYC - BVN" />} />
                 <Route path="/kyc/nin" element={<Placeholder title="KYC - NIN" />} />
