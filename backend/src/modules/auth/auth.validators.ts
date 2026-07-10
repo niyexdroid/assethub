@@ -21,8 +21,10 @@ export const loginVerifySchema = z.object({
 });
 
 export const googleAuthSchema = z.object({
-  idToken: z.string(),
-});
+  idToken: z.string().optional(),
+  code: z.string().optional(),
+  redirectUri: z.string().optional(),
+}).refine(d => d.idToken || d.code, { message: 'Either idToken or code is required' });
 
 export const googleCompleteSchema = z.object({
   googleId:   z.string(),

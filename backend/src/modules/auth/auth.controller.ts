@@ -55,8 +55,8 @@ export async function verifyLoginOtp(req: Request, res: Response, next: NextFunc
 
 export async function googleAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const { idToken } = googleAuthSchema.parse(req.body);
-    const result = await svc.googleAuth(idToken);
+    const { idToken, code, redirectUri } = googleAuthSchema.parse(req.body);
+    const result = await svc.googleAuth(idToken, code, redirectUri);
     res.json(result);
   } catch (err) { return next(err); }
 }
