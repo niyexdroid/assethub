@@ -25,6 +25,25 @@ import TenancyScreen from '@/pages/tenant/Tenancy'
 import PaymentsScreen from '@/pages/tenant/Payments'
 import ComplaintsScreen from '@/pages/tenant/Complaints'
 
+// Tenant pages (new)
+import ApplyScreen from '@/pages/tenant/Apply'
+import TenancyDetailScreen from '@/pages/tenant/TenancyDetail'
+import PayRentScreen from '@/pages/tenant/PayRent'
+import ReceiptScreen from '@/pages/tenant/Receipt'
+import NewComplaintScreen from '@/pages/tenant/NewComplaint'
+import ComplaintDetailScreen from '@/pages/tenant/ComplaintDetail'
+import RoommatesListScreen from '@/pages/tenant/RoommatesList'
+import RoommateProfileScreen from '@/pages/tenant/RoommateProfile'
+import RoommateRequestsScreen from '@/pages/tenant/RoommateRequests'
+
+// Shared pages
+import KycOverviewScreen from '@/pages/shared/KycOverview'
+import KycBvnScreen from '@/pages/shared/KycBvn'
+import KycNinScreen from '@/pages/shared/KycNin'
+import KycStudentScreen from '@/pages/shared/KycStudent'
+import KycReviewScreen from '@/pages/shared/KycReview'
+import NotificationsScreen from '@/pages/shared/Notifications'
+
 // Landlord pages
 import DashboardScreen from '@/pages/landlord/Dashboard'
 import MyListings from '@/pages/landlord/MyListings'
@@ -61,25 +80,25 @@ export function App() {
                 <Route path="/" element={<Navigate to="/home" replace />} />
                 <Route path="/home" element={<HomeScreen />} />
                 <Route path="/property/:id" element={<PropertyDetailScreen />} />
-                <Route path="/apply/:propertyId" element={<Placeholder title="Apply" />} />
+                <Route path="/apply/:propertyId" element={<ApplyScreen />} />
                 <Route path="/tenancy" element={<TenancyScreen />} />
-                <Route path="/tenancy/:id" element={<Placeholder title="Tenancy Detail" />} />
+                <Route path="/tenancy/:id" element={<TenancyDetailScreen />} />
                 <Route path="/payments" element={<PaymentsScreen />} />
-                <Route path="/payments/pay" element={<Placeholder title="Pay Rent" />} />
-                <Route path="/payments/receipt" element={<Placeholder title="Receipt" />} />
+                <Route path="/payments/pay" element={<PayRentScreen />} />
+                <Route path="/payments/receipt" element={<ReceiptScreen />} />
                 <Route path="/complaints" element={<ComplaintsScreen />} />
-                <Route path="/complaints/new" element={<Placeholder title="New Complaint" />} />
-                <Route path="/complaints/:id" element={<Placeholder title="Complaint Detail" />} />
-                <Route path="/roommates" element={<Placeholder title="Roommates" />} />
-                <Route path="/roommates/profile" element={<Placeholder title="Roommate Profile" />} />
-                <Route path="/roommates/requests" element={<Placeholder title="Requests" />} />
-                <Route path="/notifications" element={<Placeholder title="Notifications" />} />
+                <Route path="/complaints/new" element={<NewComplaintScreen />} />
+                <Route path="/complaints/:id" element={<ComplaintDetailScreen />} />
+                <Route path="/roommates" element={<RoommatesListScreen />} />
+                <Route path="/roommates/profile" element={<RoommateProfileScreen />} />
+                <Route path="/roommates/requests" element={<RoommateRequestsScreen />} />
+                <Route path="/notifications" element={<NotificationsScreen />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/kyc" element={<Placeholder title="KYC" />} />
-                <Route path="/kyc/bvn" element={<Placeholder title="KYC - BVN" />} />
-                <Route path="/kyc/nin" element={<Placeholder title="KYC - NIN" />} />
-                <Route path="/kyc/student" element={<Placeholder title="KYC - Student" />} />
-                <Route path="/kyc/review" element={<Placeholder title="KYC - Review" />} />
+                <Route path="/kyc" element={<KycOverviewScreen />} />
+                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
+                <Route path="/kyc/nin" element={<KycNinScreen />} />
+                <Route path="/kyc/student" element={<KycStudentScreen />} />
+                <Route path="/kyc/review" element={<KycReviewScreen />} />
               </Route>
             </Route>
           </Route>
@@ -98,13 +117,13 @@ export function App() {
                 <Route path="/landlord/payments" element={<Placeholder title="Payments" />} />
                 <Route path="/landlord/complaints" element={<Placeholder title="Complaints" />} />
                 <Route path="/landlord/complaints/:id" element={<Placeholder title="Complaint Detail" />} />
-                <Route path="/notifications" element={<Placeholder title="Notifications" />} />
+                <Route path="/notifications" element={<NotificationsScreen />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/kyc" element={<Placeholder title="KYC" />} />
-                <Route path="/kyc/bvn" element={<Placeholder title="KYC - BVN" />} />
-                <Route path="/kyc/nin" element={<Placeholder title="KYC - NIN" />} />
-                <Route path="/kyc/student" element={<Placeholder title="KYC - Student" />} />
-                <Route path="/kyc/review" element={<Placeholder title="KYC - Review" />} />
+                <Route path="/kyc" element={<KycOverviewScreen />} />
+                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
+                <Route path="/kyc/nin" element={<KycNinScreen />} />
+                <Route path="/kyc/student" element={<KycStudentScreen />} />
+                <Route path="/kyc/review" element={<KycReviewScreen />} />
               </Route>
             </Route>
           </Route>
