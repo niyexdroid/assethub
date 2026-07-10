@@ -29,7 +29,7 @@ android/app/build/
 android/build/
 android/.gradle/
 android/local.properties
-android/app/google-services.json
+# android/app/google-services.json — removed: needed by EAS Build
 *.apk
 *.aab
 
@@ -72,7 +72,7 @@ coverage/
 .nyc_output/
 
 # ── Firebase ──────────────────────────────────────────────────────────────────
-google-services.json
+# google-services.json — removed: needed by EAS Build
 GoogleService-Info.plist
 assethub_firebase_config.json
 *firebase*adminsdk*.json

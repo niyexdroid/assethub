@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "426756347604",
+    "project_id": "propman-962a5",
+    "storage_bucket": "propman-962a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:426756347604:android:1e250bedf8675ce90d0d41",
+        "android_client_info": {
+          "package_name": "com.niyexdroid.assethub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBEQDLU3PlOK4ZGNVEgDdm3Pa5lg2o6RM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "scheme": "assethub",
     "newArchEnabled": true,
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/a0761754-7be3-4bec-a3df-088418a3afc4",
+      "checkAutomatically": "ON_LOAD"
+    },
     "plugins": [
       "expo-asset",
       "expo-router",
@@ -26,6 +31,13 @@
     },
     "ios": {
       "bundleIdentifier": "com.niyexdroid.assethub"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a0761754-7be3-4bec-a3df-088418a3afc4"
+      }
+    },
+    "owner": "niyex"
   }
 }
