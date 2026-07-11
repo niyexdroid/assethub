@@ -1,0 +1,190 @@
+# Task 3: PayRent + Receipt Pages
+
+## Goal
+
+Create two payment-related pages:
+- `web/src/pages/tenant/PayRent.tsx` — payment initiation form
+- `web/src/pages/tenant/Receipt.tsx` — print-friendly receipt view
+
+## PayRent.tsx
+
+Tenancy ID + amount form, submits via `paymentsService.initialize()`, redirects to Paystack.
+
+```tsx
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, CreditCard } from 'lucide-react'
+import { paymentsService } from '@/services/payments.service'
+import { formatNGN } from '@/lib/utils'
+
+export default function PayRentScreen() {
+  const navigate = useNavigate()
+  const [amount, setAmount] = useState('')
+  const [tenancyId, setTenancyId] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async () => {
+    const amt = Number(amount)
+    if (!amt || amt <= 0) { setError('Enter a valid amount.'); return }
+    if (!tenancyId.trim()) { setError('Tenancy ID is required.'); return }
+    setSubmitting(true)
+    setError('')
+    try {
+      const result = await paymentsService.initialize(tenancyId.trim(), amt)
+      window.location.href = result.authorization_url
+    } catch (err) {
+      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not initiate payment.')
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="p-6 max-w-xl mx-auto">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </button>
+      <h1 className="text-h2 text-foreground mb-6">Pay Rent</h1>
+
+      <div className="rounded-xl border bg-card p-6 space-y-5">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Tenancy ID</label>
+          <input
+            type="text" value={tenancyId} onChange={(e) => setTenancyId(e.target.value)}
+            placeholder="e.g. a1b2c3d4-..."
+            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Amount (₦)</label>
+          <input
+            type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+            placeholder="e.g. 500000"
+            min="1"
+            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          {amount && !isNaN(Number(amount)) && (
+            <p className="text-sm text-muted-foreground mt-2">{formatNGN(Number(amount))}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <CreditCard className="w-5 h-5 text-amber-600 shrink-0" />
+          <p className="text-sm text-amber-700">You will be redirected to Paystack to complete your payment securely.</p>
+        </div>
+
+        {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
+
+        <button
+          onClick={handleSubmit} disabled={submitting}
+          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
+        >
+          {submitting ? 'Redirecting...' : 'Pay with Paystack'}
+        </button>
+      </div>
+    </div>
+  )
+}
+```
+
+## Receipt.tsx
+
+Reads transaction from router state (`useLocation().state.transaction`) or fetches by query param `?id=`. Print-friendly layout.
+
+```tsx
+import { useEffect, useState } from 'react'
+import { useLocation, useSearchParams, Link } from 'react-router-dom'
+import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
+import { paymentsService, type PaymentTransaction } from '@/services/payments.service'
+import { formatNGN, formatDate } from '@/lib/utils'
+import { ErrorState } from '@/components/custom/ErrorState'
+
+export default function ReceiptScreen() {
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const [tx, setTx] = useState<PaymentTransaction | null>((location.state as any)?.transaction ?? null)
+  const [loading, setLoading] = useState(!tx)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const txId = searchParams.get('id')
+    if (tx || !txId) return
+    setLoading(true)
+    paymentsService.getTransaction(txId)
+      .then(setTx)
+      .catch(() => setError('Could not load receipt.'))
+      .finally(() => setLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) {
+    return (
+      <div className="p-6 max-w-xl mx-auto">
+        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+      </div>
+    )
+  }
+
+  if (error || !tx) return <ErrorState message={error || 'Receipt not found.'} />
+
+  return (
+    <div className="p-6 max-w-xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/payments" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="w-4 h-4" /> Back to payments
+        </Link>
+        <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">
+          <Printer className="w-4 h-4" /> Print
+        </button>
+      </div>
+
+      <div className="rounded-2xl border bg-card p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        </div>
+        <h2 className="text-lg font-bold text-foreground mb-1">Payment {tx.status === 'success' ? 'Successful' : tx.status}</h2>
+        <p className="text-3xl font-extrabold text-primary mt-4">{formatNGN(tx.amount)}</p>
+
+        <div className="mt-8 space-y-3 text-sm">
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Reference</span>
+            <span className="font-mono font-medium text-foreground">{tx.reference}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Date</span>
+            <span className="font-medium text-foreground">{formatDate(tx.paid_at ?? tx.created_at)}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Status</span>
+            <span className={`font-semibold capitalize ${
+              tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : 'text-destructive'
+            }`}>{tx.status}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b">
+            <span className="text-muted-foreground">Channel</span>
+            <span className="font-medium text-foreground capitalize">{tx.channel || '—'}</span>
+          </div>
+          {tx.property?.title && (
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Property</span>
+              <span className="font-medium text-foreground">{tx.property.title}</span>
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-8">AssetHub — Payment Receipt</p>
+      </div>
+    </div>
+  )
+}
+```
+
+## Verification
+
+1. Run `cd web && npx tsc --noEmit --pretty 2>&1 | head -20` — expect no new errors
+2. Commit both files: `git add web/src/pages/tenant/PayRent.tsx web/src/pages/tenant/Receipt.tsx && git commit -m "feat: add tenant PayRent and Receipt pages"`
+
+## Global Constraints
+
+- Catch blocks use type assertion: `(err as any)?.response?.data?.message ?? (err as any)?.message ?? 'fallback'`
+- Icons from `lucide-react` only
+- Uses `formatNGN`, `formatDate` from `@/lib/utils`

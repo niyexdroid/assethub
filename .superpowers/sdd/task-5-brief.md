@@ -1,3 +1,14 @@
+# Task 5: RoommatesList Page
+
+## Goal
+
+Create `web/src/pages/tenant/RoommatesList.tsx` — browse and connect with potential roommates.
+
+Note: No public roommates browse API exists. This page works with existing request data (received + sent) to display profiles.
+
+## Exact Code
+
+```tsx
 import { useCallback, useEffect, useState } from 'react'
 import { Users, Send } from 'lucide-react'
 import { roommatesService, type RoommateRequest } from '@/services/roommates.service'
@@ -54,21 +65,17 @@ export default function RoommatesListScreen() {
 
   if (error) return <ErrorState message={error} onRetry={load} />
 
-  // Extract unique profiles from requests — handle both sender and receiver
+  // Extract unique profiles from requests
   const seen = new Set<string>()
   const profiles = requests.reduce<Array<{ userId: string; name: string; bio?: string }>>((acc, r) => {
-    for (const role of ['sender', 'receiver'] as const) {
-      const person = r[role]
-      const userId = r[`${role}_id` as keyof RoommateRequest] as string
-      if (person && userId && !seen.has(userId)) {
-        seen.add(userId)
-        acc.push({
-          userId,
-          name: `${person.first_name} ${person.last_name}`,
-          bio: undefined,
-        })
-      }
-    }
+    const other = r.sender_id
+    if (seen.has(other)) return acc
+    seen.add(other)
+    acc.push({
+      userId: other,
+      name: r.sender ? `${r.sender.first_name} ${r.sender.last_name}` : 'Unknown',
+      bio: undefined,
+    })
     return acc
   }, [])
 
@@ -117,3 +124,15 @@ export default function RoommatesListScreen() {
     </div>
   )
 }
+```
+
+## Verification
+
+1. Run `cd web && npx tsc --noEmit --pretty 2>&1 | head -20` — expect no new errors
+2. Commit: `git add web/src/pages/tenant/RoommatesList.tsx && git commit -m "feat: add tenant Roommates List page"`
+
+## Global Constraints
+
+- Catch blocks use type assertion
+- Icons from `lucide-react` only
+- Uses `EmptyState`, `ErrorState` from `@/components/custom/`

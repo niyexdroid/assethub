@@ -1,24 +1,27 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Upload } from 'lucide-react'
 import { kycService } from '@/services/kyc.service'
 
 export default function KycStudentScreen() {
-  const [school, setSchool] = useState('')
-  const [matricNumber, setMatricNumber] = useState('')
+  const [schoolName, setSchoolName] = useState('')
+  const [schoolEmail, setSchoolEmail] = useState('')
+  const [studentIdFile, setStudentIdFile] = useState<File | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async () => {
-    if (!school.trim()) { setError('School name is required.'); return }
-    if (!matricNumber.trim()) { setError('Matriculation number is required.'); return }
+    if (!schoolName.trim()) { setError('School name is required.'); return }
+    if (!studentIdFile) { setError('Student ID image is required.'); return }
     setSubmitting(true)
     setError('')
     try {
       const fd = new FormData()
-      fd.append('school', school.trim())
-      fd.append('matric_number', matricNumber.trim())
+      fd.append('school_name', schoolName.trim())
+      if (schoolEmail.trim()) fd.append('school_email', schoolEmail.trim())
+      fd.append('student_id', studentIdFile)
       await kycService.submitStudentId(fd)
       setSuccess(true)
     } catch (err) {
@@ -46,15 +49,25 @@ export default function KycStudentScreen() {
         <div className="rounded-xl border bg-card p-6 space-y-5">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">School Name</label>
-            <input type="text" value={school} onChange={(e) => setSchool(e.target.value)}
+            <input type="text" value={schoolName} onChange={(e) => setSchoolName(e.target.value)}
               placeholder="e.g. University of Lagos"
               className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Matriculation Number</label>
-            <input type="text" value={matricNumber} onChange={(e) => setMatricNumber(e.target.value)}
-              placeholder="e.g. 190802001"
+            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">School Email <span className="font-normal normal-case">(optional)</span></label>
+            <input type="email" value={schoolEmail} onChange={(e) => setSchoolEmail(e.target.value)}
+              placeholder="e.g. student@unilag.edu.ng"
               className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Student ID Image</label>
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="w-full h-20 rounded-xl border-2 border-dashed bg-card flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:border-ring transition-colors">
+              <Upload className="w-5 h-5" />
+              {studentIdFile ? studentIdFile.name : 'Tap to upload student ID image'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => setStudentIdFile(e.target.files?.[0] ?? null)} />
           </div>
           {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
           <button onClick={handleSubmit} disabled={submitting}

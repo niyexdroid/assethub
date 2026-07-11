@@ -1,6 +1,27 @@
+# Task 1: Apply Page
+
+## Goal
+
+Create the tenant Apply page at `web/src/pages/tenant/Apply.tsx` — a form for applying to a rental property.
+
+## What to Build
+
+A React component that:
+1. Fetches a property by ID from the URL params (`useParams<{ propertyId: string }>()`)
+2. Shows a property summary card (title, address, rent amounts)
+3. Has a tenancy type toggle (yearly/monthly) with contextual help text
+4. Has a move-in date input (text, YYYY-MM-DD format)
+5. Has an optional message textarea
+6. Shows an info banner about the review process
+7. Submits via `tenanciesService.apply(data)` then navigates to `/tenancy`
+8. Has a Cancel button that navigates back
+
+## Exact Code
+
+```tsx
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, MapPin, Info, CheckCircle2 } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ArrowLeft, MapPin, Info } from 'lucide-react'
 import { tenanciesService } from '@/services/tenancies.service'
 import { propertiesService, type Property } from '@/services/properties.service'
 import { formatNGN } from '@/lib/utils'
@@ -8,6 +29,7 @@ import { ErrorState } from '@/components/custom/ErrorState'
 
 export default function ApplyScreen() {
   const { propertyId } = useParams<{ propertyId: string }>()
+  const navigate = useNavigate()
   const [property, setProperty] = useState<Property | null>(null)
   const [loadingProp, setLoadingProp] = useState(true)
   const [propError, setPropError] = useState('')
@@ -16,7 +38,6 @@ export default function ApplyScreen() {
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [success, setSuccess] = useState(false)
 
   useEffect(() => {
     if (!propertyId) return
@@ -41,7 +62,8 @@ export default function ApplyScreen() {
         move_in_date: moveInDate,
         message: message.trim() || undefined,
       })
-      setSuccess(true)
+      alert('Application sent! The landlord will review it and you\'ll be notified once a decision is made.')
+      navigate('/tenancy')
     } catch (err) {
       setSubmitError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not submit application.')
     } finally {
@@ -66,23 +88,9 @@ export default function ApplyScreen() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       {/* Header */}
-      <button onClick={() => window.history.back()} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
-
-      {success ? (
-        <div className="rounded-xl border bg-card p-8 text-center">
-          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-foreground mb-2">Application Sent!</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            The landlord will review your application and you'll be notified once a decision is made.
-          </p>
-          <Link to="/tenancy" className="inline-block px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90">
-            View My Tenancy
-          </Link>
-        </div>
-      ) : (
-        <>
       <h1 className="text-h2 text-foreground mb-6">Apply for Property</h1>
 
       {/* Property summary */}
@@ -187,8 +195,20 @@ export default function ApplyScreen() {
           Cancel
         </button>
       </div>
-        </>
-      )}
     </div>
   )
 }
+```
+
+## Verification
+
+After creating the file:
+1. Run `cd web && npx tsc --noEmit --pretty 2>&1 | head -20` — expect no new errors
+2. Commit with message: `feat: add tenant Apply page with property summary and form`
+
+## Global Constraints
+
+- Catch blocks use type assertion: `(err as any)?.response?.data?.message ?? (err as any)?.message ?? 'fallback'`
+- No form validation library — plain inline checks
+- Icons from `lucide-react` only
+- Uses `formatNGN` from `@/lib/utils`

@@ -13,6 +13,7 @@ export default function RoommateRequestsScreen() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'received' | 'sent'>('received')
   const [actingId, setActingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -35,15 +36,17 @@ export default function RoommateRequestsScreen() {
 
   const handleAccept = async (id: string) => {
     setActingId(id)
+    setActionError('')
     try { await roommatesService.acceptRequest(id); load() }
-    catch { /* silently fail */ }
+    catch (err) { setActionError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not accept request.') }
     finally { setActingId(null) }
   }
 
   const handleDecline = async (id: string) => {
     setActingId(id)
+    setActionError('')
     try { await roommatesService.declineRequest(id); load() }
-    catch { /* silently fail */ }
+    catch (err) { setActionError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not decline request.') }
     finally { setActingId(null) }
   }
 
@@ -83,6 +86,10 @@ export default function RoommateRequestsScreen() {
           Sent ({sent.length})
         </button>
       </div>
+
+      {actionError && (
+        <p className="text-sm text-destructive mb-4 p-3 rounded-lg bg-destructive/10">{actionError}</p>
+      )}
 
       {current.length === 0 ? (
         <EmptyState
