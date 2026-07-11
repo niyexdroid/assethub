@@ -1,0 +1,3358 @@
+diff --git a/docs/superpowers/plans/2026-07-10-tenant-web-pages-plan.md b/docs/superpowers/plans/2026-07-10-tenant-web-pages-plan.md
+new file mode 100644
+index 0000000..c1abf99
+--- /dev/null
++++ b/docs/superpowers/plans/2026-07-10-tenant-web-pages-plan.md
+@@ -0,0 +1,2236 @@
++# Tenant Web Pages Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Replace 15 Placeholder routes with real tenant and shared web pages, desktop-first power-user oriented.
++
++**Architecture:** Each page is a standalone React component in `web/src/pages/tenant/` or `web/src/pages/shared/`, using existing services, shared components (`EmptyState`, `ErrorState`, `StatCard`), and the `TenantLayout`/`LandlordLayout` shells. Follows the same patterns as the landlord batch: local `useState` + `useCallback` + `useEffect`, loading skeletons, error/empty states, lucide-react icons.
++
++**Tech Stack:** React 19, TypeScript, Tailwind CSS, react-router-dom v7, lucide-react, existing service layer
++
++## Global Constraints
++
++- All pages use the existing `web/src/services/` layer — no new API calls
++- Every page handles: loading (skeleton), error (ErrorState), empty (EmptyState), and data states
++- Catch blocks use type assertion: `(err as any)?.response?.data?.message ?? (err as any)?.message ?? 'fallback'`
++- No form validation library — plain inline checks matching existing patterns
++- Icons from `lucide-react` only
++- Color tokens: `brand-green`, `emerald`, `amber`, `muted`, `destructive`, `primary`, `foreground`, `muted-foreground`
++- All pages use `formatNGN`, `formatDate`, `timeAgo` from `@/lib/utils`
++
++---
++
++### Task 1: Apply Page
++
++**Files:**
++- Create: `web/src/pages/tenant/Apply.tsx`
++
++**Interfaces:**
++- Consumes: `tenanciesService.apply(data)`, `propertiesService.getById(id)`, `Property` type
++- Produces: `default export function ApplyScreen()`
++
++- [ ] **Step 1: Create Apply.tsx**
++
++```tsx
++import { useEffect, useState } from 'react'
++import { useParams, useNavigate } from 'react-router-dom'
++import { ArrowLeft, MapPin, Info } from 'lucide-react'
++import { tenanciesService } from '@/services/tenancies.service'
++import { propertiesService, type Property } from '@/services/properties.service'
++import { formatNGN } from '@/lib/utils'
++import { ErrorState } from '@/components/custom/ErrorState'
++
++export default function ApplyScreen() {
++  const { propertyId } = useParams<{ propertyId: string }>()
++  const navigate = useNavigate()
++  const [property, setProperty] = useState<Property | null>(null)
++  const [loadingProp, setLoadingProp] = useState(true)
++  const [propError, setPropError] = useState('')
++  const [tenancyType, setTenancyType] = useState<'yearly' | 'monthly'>('yearly')
++  const [moveInDate, setMoveInDate] = useState('')
++  const [message, setMessage] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [submitError, setSubmitError] = useState('')
++
++  useEffect(() => {
++    if (!propertyId) return
++    setLoadingProp(true)
++    propertiesService.getById(propertyId)
++      .then(setProperty)
++      .catch(() => setPropError('Could not load property details.'))
++      .finally(() => setLoadingProp(false))
++  }, [propertyId])
++
++  const handleSubmit = async () => {
++    if (!moveInDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
++      setSubmitError('Enter move-in date in YYYY-MM-DD format.')
++      return
++    }
++    setSubmitting(true)
++    setSubmitError('')
++    try {
++      await tenanciesService.apply({
++        property_id: propertyId,
++        tenancy_type: tenancyType,
++        move_in_date: moveInDate,
++        message: message.trim() || undefined,
++      })
++      alert('Application sent! The landlord will review it and you\'ll be notified once a decision is made.')
++      navigate('/tenancy')
++    } catch (err) {
++      setSubmitError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not submit application.')
++    } finally {
++      setSubmitting(false)
++    }
++  }
++
++  if (loadingProp) {
++    return (
++      <div className="p-6 max-w-2xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-32 rounded-xl bg-muted animate-pulse" />
++        <div className="h-64 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (propError) return <ErrorState message={propError} onRetry={() => navigate(0)} />
++
++  const p = property!
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      {/* Header */}
++      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back
++      </button>
++      <h1 className="text-h2 text-foreground mb-6">Apply for Property</h1>
++
++      {/* Property summary */}
++      <div className="rounded-xl border bg-card p-5 mb-6">
++        <h2 className="font-semibold text-foreground">{p.title}</h2>
++        <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
++          <MapPin className="w-3.5 h-3.5" /> {p.address}
++        </p>
++        <div className="flex gap-8 mt-3 text-sm">
++          {p.yearly_rent != null && (
++            <div>
++              <p className="text-muted-foreground">Yearly</p>
++              <p className="font-semibold text-primary">{formatNGN(Number(p.yearly_rent))}</p>
++            </div>
++          )}
++          {p.monthly_rent != null && (
++            <div>
++              <p className="text-muted-foreground">Monthly</p>
++              <p className="font-semibold text-primary">{formatNGN(Number(p.monthly_rent))}</p>
++            </div>
++          )}
++        </div>
++      </div>
++
++      {/* Tenancy type */}
++      <div className="mb-6">
++        <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Rent Payment Type</p>
++        <div className="flex gap-3">
++          {(['yearly', 'monthly'] as const).map((t) => (
++            <button
++              key={t}
++              onClick={() => setTenancyType(t)}
++              className={`px-5 py-2.5 rounded-xl border-2 text-sm font-medium transition-colors capitalize ${
++                tenancyType === t
++                  ? 'border-primary bg-primary/10 text-primary'
++                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
++              }`}
++            >
++              {t}
++            </button>
++          ))}
++        </div>
++        <p className="text-xs text-muted-foreground mt-2">
++          {tenancyType === 'yearly'
++            ? 'Yearly payment is common in Lagos — usually required upfront.'
++            : 'Monthly payment if the landlord accepts it.'}
++        </p>
++      </div>
++
++      {/* Move-in date */}
++      <div className="mb-6">
++        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Preferred Move-in Date</label>
++        <input
++          type="text"
++          value={moveInDate}
++          onChange={(e) => setMoveInDate(e.target.value)}
++          placeholder="YYYY-MM-DD  e.g. 2026-08-01"
++          className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++        />
++      </div>
++
++      {/* Message */}
++      <div className="mb-6">
++        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">
++          Message to Landlord <span className="font-normal normal-case">(optional)</span>
++        </label>
++        <textarea
++          value={message}
++          onChange={(e) => setMessage(e.target.value)}
++          placeholder="Introduce yourself — occupation, number of occupants, references..."
++          rows={4}
++          className="w-full px-4 py-3 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
++        />
++      </div>
++
++      {/* Info */}
++      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 mb-8">
++        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
++        <p className="text-sm text-primary/80">
++          The landlord will review your application and contact you. You'll get a notification once a decision is made.
++        </p>
++      </div>
++
++      {/* Error */}
++      {submitError && (
++        <p className="text-sm text-destructive mb-4 p-3 rounded-lg bg-destructive/10">{submitError}</p>
++      )}
++
++      {/* Actions */}
++      <div className="flex flex-col gap-3">
++        <button
++          onClick={handleSubmit}
++          disabled={submitting}
++          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
++        >
++          {submitting ? 'Submitting...' : 'Submit Application'}
++        </button>
++        <button
++          onClick={() => navigate(-1)}
++          className="w-full h-12 rounded-xl border text-sm font-medium hover:bg-muted transition-colors"
++        >
++          Cancel
++        </button>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add web/src/pages/tenant/Apply.tsx
++git commit -m "feat: add tenant Apply page with property summary and form"
++```
++
++---
++
++### Task 2: TenancyDetail Page
++
++**Files:**
++- Create: `web/src/pages/tenant/TenancyDetail.tsx`
++
++**Interfaces:**
++- Consumes: `tenanciesService.getById(id)`, `tenanciesService.terminate(id)`, `paymentsService.getHistory()`, `Tenancy`, `PaymentTransaction`
++- Produces: `default export function TenancyDetailScreen()`
++
++- [ ] **Step 1: Create TenancyDetail.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { useParams, Link, useNavigate } from 'react-router-dom'
++import { ArrowLeft, Building2, CreditCard, Calendar, User, ShieldAlert, AlertTriangle } from 'lucide-react'
++import { tenanciesService, type Tenancy } from '@/services/tenancies.service'
++import { paymentsService, type PaymentTransaction } from '@/services/payments.service'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { EmptyState } from '@/components/custom/EmptyState'
++import { formatNGN, formatDate } from '@/lib/utils'
++
++export default function TenancyDetailScreen() {
++  const { id } = useParams<{ id: string }>()
++  const navigate = useNavigate()
++  const [tenancy, setTenancy] = useState<Tenancy | null>(null)
++  const [payments, setPayments] = useState<PaymentTransaction[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [terminating, setTerminating] = useState(false)
++  const [terminateError, setTerminateError] = useState('')
++  const [showTerminate, setShowTerminate] = useState(false)
++
++  const load = useCallback(async () => {
++    if (!id) return
++    setLoading(true)
++    setError('')
++    try {
++      const [t, p] = await Promise.all([
++        tenanciesService.getById(id),
++        paymentsService.getHistory(),
++      ])
++      setTenancy(t)
++      setPayments((p as PaymentTransaction[]).filter((tx) => tx.tenancy_id === id))
++    } catch {
++      setError('Could not load tenancy details.')
++    } finally {
++      setLoading(false)
++    }
++  }, [id])
++
++  useEffect(() => { load() }, [load])
++
++  const handleTerminate = async () => {
++    if (!id) return
++    setTerminating(true)
++    setTerminateError('')
++    try {
++      await tenanciesService.terminate(id)
++      navigate('/tenancy')
++    } catch (err) {
++      setTerminateError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Failed to terminate tenancy.')
++      setTerminating(false)
++    }
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-4xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-40 rounded-xl bg-muted animate-pulse" />
++        <div className="h-40 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++  if (!tenancy) return <ErrorState message="Tenancy not found." />
++
++  const statusColor: Record<string, string> = {
++    active: 'text-emerald-600 bg-emerald-500/10',
++    pending: 'text-amber-600 bg-amber-500/10',
++    terminated: 'text-muted-foreground bg-muted',
++    declined: 'text-destructive bg-destructive/10',
++  }
++
++  return (
++    <div className="p-6 max-w-4xl mx-auto">
++      {/* Header */}
++      <div className="flex items-center justify-between mb-6">
++        <div>
++          <Link to="/tenancy" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
++            <ArrowLeft className="w-4 h-4" /> Back to tenancy
++          </Link>
++          <h1 className="text-h2 text-foreground">Tenancy Details</h1>
++        </div>
++        {tenancy.status === 'active' && (
++          <button
++            onClick={() => setShowTerminate(true)}
++            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-destructive/30 text-destructive text-sm font-medium hover:bg-destructive/5"
++          >
++            <ShieldAlert className="w-4 h-4" /> Terminate
++          </button>
++        )}
++      </div>
++
++      {/* Status badge */}
++      <div className="mb-6">
++        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-semibold capitalize ${statusColor[tenancy.status] ?? 'bg-muted text-muted-foreground'}`}>
++          {tenancy.status}
++        </span>
++      </div>
++
++      {/* Info cards */}
++      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
++        {/* Property card */}
++        <div className="rounded-xl border bg-card p-5">
++          <div className="flex items-center gap-2 mb-4">
++            <Building2 className="w-4 h-4 text-muted-foreground" />
++            <h3 className="text-sm font-semibold text-foreground">Property</h3>
++          </div>
++          {tenancy.property ? (
++            <div>
++              <p className="font-semibold text-foreground">{tenancy.property.title}</p>
++              <p className="text-sm text-muted-foreground">{tenancy.property.address}</p>
++            </div>
++          ) : (
++            <p className="text-sm text-muted-foreground">—</p>
++          )}
++        </div>
++
++        {/* Landlord card */}
++        <div className="rounded-xl border bg-card p-5">
++          <div className="flex items-center gap-2 mb-4">
++            <User className="w-4 h-4 text-muted-foreground" />
++            <h3 className="text-sm font-semibold text-foreground">Landlord</h3>
++          </div>
++          {tenancy.tenant ? (
++            <div>
++              <p className="font-semibold text-foreground">{tenancy.tenant.first_name} {tenancy.tenant.last_name}</p>
++              <p className="text-sm text-muted-foreground">{tenancy.tenant.email}</p>
++            </div>
++          ) : (
++            <p className="text-sm text-muted-foreground">Contact info not available</p>
++          )}
++        </div>
++      </div>
++
++      {/* Rent & dates */}
++      <div className="rounded-xl border bg-card p-5 mb-8">
++        <div className="flex items-center gap-2 mb-4">
++          <CreditCard className="w-4 h-4 text-muted-foreground" />
++          <h3 className="text-sm font-semibold text-foreground">Rent & Dates</h3>
++        </div>
++        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
++          <div>
++            <p className="text-muted-foreground">Rent Amount</p>
++            <p className="font-semibold">{formatNGN(tenancy.rent_amount)}</p>
++          </div>
++          <div>
++            <p className="text-muted-foreground">Type</p>
++            <p className="font-semibold capitalize">{tenancy.tenancy_type}</p>
++          </div>
++          {tenancy.caution_fee != null && (
++            <div>
++              <p className="text-muted-foreground">Caution Fee</p>
++              <p className="font-semibold">{formatNGN(tenancy.caution_fee)}</p>
++            </div>
++          )}
++          {tenancy.agency_fee != null && (
++            <div>
++              <p className="text-muted-foreground">Agency Fee</p>
++              <p className="font-semibold">{formatNGN(tenancy.agency_fee)}</p>
++            </div>
++          )}
++        </div>
++        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t text-sm">
++          <div>
++            <p className="text-muted-foreground">Start Date</p>
++            <p className="font-semibold">{tenancy.start_date ? formatDate(tenancy.start_date) : '—'}</p>
++          </div>
++          <div>
++            <p className="text-muted-foreground">End Date</p>
++            <p className="font-semibold">{tenancy.end_date ? formatDate(tenancy.end_date) : '—'}</p>
++          </div>
++        </div>
++      </div>
++
++      {/* Agreement status */}
++      <div className="rounded-xl border bg-card p-5 mb-8">
++        <div className="flex items-center gap-2 mb-4">
++          <Calendar className="w-4 h-4 text-muted-foreground" />
++          <h3 className="text-sm font-semibold text-foreground">Agreement</h3>
++        </div>
++        <div className="grid grid-cols-2 gap-4 text-sm">
++          <div className="flex items-center gap-2">
++            <div className={`w-2.5 h-2.5 rounded-full ${tenancy.tenant_signed ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
++            <span>Tenant {tenancy.tenant_signed ? 'signed ✓' : 'not signed'}</span>
++          </div>
++          <div className="flex items-center gap-2">
++            <div className={`w-2.5 h-2.5 rounded-full ${tenancy.landlord_signed ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
++            <span>Landlord {tenancy.landlord_signed ? 'signed ✓' : 'not signed'}</span>
++          </div>
++        </div>
++      </div>
++
++      {/* Payment history */}
++      <div className="rounded-xl border bg-card p-5 mb-8">
++        <h3 className="text-sm font-semibold text-foreground mb-4">Payment History</h3>
++        {payments.length === 0 ? (
++          <EmptyState title="No payments recorded" description="Payments made for this tenancy will appear here." />
++        ) : (
++          <div className="space-y-2">
++            {payments.map((tx) => (
++              <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
++                <div>
++                  <p className="font-medium text-foreground">{formatNGN(tx.amount)}</p>
++                  <p className="text-muted-foreground text-xs">{tx.reference?.slice(0, 16)}... • {formatDate(tx.paid_at ?? tx.created_at)}</p>
++                </div>
++                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${
++                  tx.status === 'success' ? 'text-emerald-600 bg-emerald-500/10' :
++                  tx.status === 'pending' ? 'text-amber-600 bg-amber-500/10' :
++                  'text-destructive bg-destructive/10'
++                }`}>{tx.status}</span>
++              </div>
++            ))}
++          </div>
++        )}
++      </div>
++
++      {/* Created */}
++      <div className="text-xs text-muted-foreground">
++        Created {formatDate(tenancy.created_at)}
++      </div>
++
++      {/* Terminate modal */}
++      {showTerminate && (
++        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
++          <div className="rounded-2xl bg-card border p-6 max-w-sm w-full mx-4 shadow-2xl">
++            <div className="flex items-center gap-3 mb-4">
++              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
++                <AlertTriangle className="w-5 h-5 text-destructive" />
++              </div>
++              <div>
++                <h3 className="font-semibold text-foreground">Terminate Tenancy</h3>
++                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
++              </div>
++            </div>
++            <p className="text-sm text-muted-foreground mb-6">
++              Are you sure you want to terminate this tenancy? The landlord will be notified.
++            </p>
++            {terminateError && (
++              <p className="text-sm text-destructive mb-4 p-2 rounded-lg bg-destructive/10">{terminateError}</p>
++            )}
++            <div className="flex gap-2 justify-end">
++              <button onClick={() => setShowTerminate(false)} className="px-4 py-2 rounded-xl border text-sm font-medium hover:bg-muted">
++                Cancel
++              </button>
++              <button onClick={handleTerminate} disabled={terminating}
++                className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 disabled:opacity-60">
++                {terminating ? 'Terminating...' : 'Terminate'}
++              </button>
++            </div>
++          </div>
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add web/src/pages/tenant/TenancyDetail.tsx
++git commit -m "feat: add tenant Tenancy Detail page with payment history and terminate"
++```
++
++---
++
++### Task 3: PayRent + Receipt Pages
++
++**Files:**
++- Create: `web/src/pages/tenant/PayRent.tsx`
++- Create: `web/src/pages/tenant/Receipt.tsx`
++
++**Interfaces:**
++- Consumes: `paymentsService.initialize(tenancyId, amount)`, `paymentsService.getTransaction(id)`, `PaymentTransaction`
++- Produces: `default export function PayRentScreen()`, `default export function ReceiptScreen()`
++
++- [ ] **Step 1: Create PayRent.tsx**
++
++```tsx
++import { useState } from 'react'
++import { useNavigate } from 'react-router-dom'
++import { ArrowLeft, CreditCard } from 'lucide-react'
++import { paymentsService } from '@/services/payments.service'
++import { formatNGN } from '@/lib/utils'
++
++export default function PayRentScreen() {
++  const navigate = useNavigate()
++  const [amount, setAmount] = useState('')
++  const [tenancyId, setTenancyId] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++
++  const handleSubmit = async () => {
++    const amt = Number(amount)
++    if (!amt || amt <= 0) { setError('Enter a valid amount.'); return }
++    if (!tenancyId.trim()) { setError('Tenancy ID is required.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      const result = await paymentsService.initialize(tenancyId.trim(), amt)
++      window.location.href = result.authorization_url
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not initiate payment.')
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back
++      </button>
++      <h1 className="text-h2 text-foreground mb-6">Pay Rent</h1>
++
++      <div className="rounded-xl border bg-card p-6 space-y-5">
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Tenancy ID</label>
++          <input
++            type="text" value={tenancyId} onChange={(e) => setTenancyId(e.target.value)}
++            placeholder="e.g. a1b2c3d4-..."
++            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++          />
++        </div>
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Amount (₦)</label>
++          <input
++            type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
++            placeholder="e.g. 500000"
++            min="1"
++            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++          />
++          {amount && !isNaN(Number(amount)) && (
++            <p className="text-sm text-muted-foreground mt-2">{formatNGN(Number(amount))}</p>
++          )}
++        </div>
++
++        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
++          <CreditCard className="w-5 h-5 text-amber-600 shrink-0" />
++          <p className="text-sm text-amber-700">You will be redirected to Paystack to complete your payment securely.</p>
++        </div>
++
++        {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++
++        <button
++          onClick={handleSubmit} disabled={submitting}
++          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
++        >
++          {submitting ? 'Redirecting...' : 'Pay with Paystack'}
++        </button>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Create Receipt.tsx**
++
++```tsx
++import { useEffect, useState } from 'react'
++import { useLocation, useSearchParams, Link } from 'react-router-dom'
++import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
++import { paymentsService, type PaymentTransaction } from '@/services/payments.service'
++import { formatNGN, formatDate } from '@/lib/utils'
++import { ErrorState } from '@/components/custom/ErrorState'
++
++export default function ReceiptScreen() {
++  const location = useLocation()
++  const [searchParams] = useSearchParams()
++  const [tx, setTx] = useState<PaymentTransaction | null>((location.state as any)?.transaction ?? null)
++  const [loading, setLoading] = useState(!tx)
++  const [error, setError] = useState('')
++
++  useEffect(() => {
++    const txId = searchParams.get('id')
++    if (tx || !txId) return
++    setLoading(true)
++    paymentsService.getTransaction(txId)
++      .then(setTx)
++      .catch(() => setError('Could not load receipt.'))
++      .finally(() => setLoading(false))
++  }, []) // eslint-disable-line react-hooks/exhaustive-deps
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-xl mx-auto">
++        <div className="h-64 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error || !tx) return <ErrorState message={error || 'Receipt not found.'} />
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <div className="flex items-center justify-between mb-6">
++        <Link to="/payments" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
++          <ArrowLeft className="w-4 h-4" /> Back to payments
++        </Link>
++        <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">
++          <Printer className="w-4 h-4" /> Print
++        </button>
++      </div>
++
++      <div className="rounded-2xl border bg-card p-8 text-center">
++        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
++          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
++        </div>
++        <h2 className="text-lg font-bold text-foreground mb-1">Payment {tx.status === 'success' ? 'Successful' : tx.status}</h2>
++        <p className="text-3xl font-extrabold text-primary mt-4">{formatNGN(tx.amount)}</p>
++
++        <div className="mt-8 space-y-3 text-sm">
++          <div className="flex justify-between py-2 border-b">
++            <span className="text-muted-foreground">Reference</span>
++            <span className="font-mono font-medium text-foreground">{tx.reference}</span>
++          </div>
++          <div className="flex justify-between py-2 border-b">
++            <span className="text-muted-foreground">Date</span>
++            <span className="font-medium text-foreground">{formatDate(tx.paid_at ?? tx.created_at)}</span>
++          </div>
++          <div className="flex justify-between py-2 border-b">
++            <span className="text-muted-foreground">Status</span>
++            <span className={`font-semibold capitalize ${
++              tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : 'text-destructive'
++            }`}>{tx.status}</span>
++          </div>
++          <div className="flex justify-between py-2 border-b">
++            <span className="text-muted-foreground">Channel</span>
++            <span className="font-medium text-foreground capitalize">{tx.channel || '—'}</span>
++          </div>
++          {tx.property?.title && (
++            <div className="flex justify-between py-2 border-b">
++              <span className="text-muted-foreground">Property</span>
++              <span className="font-medium text-foreground">{tx.property.title}</span>
++            </div>
++          )}
++        </div>
++
++        <p className="text-xs text-muted-foreground mt-8">AssetHub — Payment Receipt</p>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add web/src/pages/tenant/PayRent.tsx web/src/pages/tenant/Receipt.tsx
++git commit -m "feat: add tenant PayRent and Receipt pages"
++```
++
++---
++
++### Task 4: NewComplaint + ComplaintDetail Pages
++
++**Files:**
++- Create: `web/src/pages/tenant/NewComplaint.tsx`
++- Create: `web/src/pages/tenant/ComplaintDetail.tsx`
++
++**Interfaces:**
++- Consumes: `complaintsService.create(data)`, `complaintsService.getById(id)`, `complaintsService.getMessages(id)`, `complaintsService.addMessage(id, msg)`, `Complaint`, `ComplaintMessage`
++- Produces: `default export function NewComplaintScreen()`, `default export function ComplaintDetailScreen()`
++
++- [ ] **Step 1: Create NewComplaint.tsx**
++
++```tsx
++import { useState } from 'react'
++import { useNavigate } from 'react-router-dom'
++import { ArrowLeft } from 'lucide-react'
++import { complaintsService } from '@/services/complaints.service'
++
++const CATEGORIES = ['maintenance', 'utilities', 'security', 'noise', 'other']
++const PRIORITIES = ['low', 'medium', 'high'] as const
++
++export default function NewComplaintScreen() {
++  const navigate = useNavigate()
++  const [title, setTitle] = useState('')
++  const [category, setCategory] = useState('maintenance')
++  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
++  const [description, setDescription] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++
++  const handleSubmit = async () => {
++    if (!title.trim()) { setError('Title is required.'); return }
++    if (!description.trim()) { setError('Description is required.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      const result = await complaintsService.create({
++        title: title.trim(),
++        category,
++        priority,
++        description: description.trim(),
++      })
++      navigate(`/complaints/${result.id}`)
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not file complaint.')
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back
++      </button>
++      <h1 className="text-h2 text-foreground mb-6">New Complaint</h1>
++
++      <div className="rounded-xl border bg-card p-6 space-y-5">
++        {/* Title */}
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Title</label>
++          <input
++            type="text" value={title} onChange={(e) => setTitle(e.target.value)}
++            placeholder="e.g. Leaking faucet in kitchen"
++            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++          />
++        </div>
++
++        {/* Category */}
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Category</label>
++          <div className="flex flex-wrap gap-2">
++            {CATEGORIES.map((c) => (
++              <button
++                key={c} onClick={() => setCategory(c)}
++                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
++                  category === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++                }`}
++              >
++                {c}
++              </button>
++            ))}
++          </div>
++        </div>
++
++        {/* Priority */}
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Priority</label>
++          <div className="flex gap-2">
++            {PRIORITIES.map((p) => (
++              <button
++                key={p} onClick={() => setPriority(p)}
++                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
++                  priority === p
++                    ? p === 'high' ? 'bg-destructive text-destructive-foreground'
++                    : p === 'medium' ? 'bg-amber-500 text-white'
++                    : 'bg-muted-foreground text-white'
++                    : 'bg-muted text-muted-foreground hover:text-foreground'
++                }`}
++              >
++                {p}
++              </button>
++            ))}
++          </div>
++        </div>
++
++        {/* Description */}
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Description</label>
++          <textarea
++            value={description} onChange={(e) => setDescription(e.target.value)}
++            placeholder="Describe the issue in detail..."
++            rows={5}
++            className="w-full px-4 py-3 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
++          />
++        </div>
++
++        {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++
++        <button
++          onClick={handleSubmit} disabled={submitting}
++          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
++        >
++          {submitting ? 'Submitting...' : 'File Complaint'}
++        </button>
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Create ComplaintDetail.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { useParams, Link } from 'react-router-dom'
++import { ArrowLeft, Send, AlertTriangle, Clock, CheckCircle2, MessageSquare } from 'lucide-react'
++import { complaintsService, type Complaint, type ComplaintMessage } from '@/services/complaints.service'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { EmptyState } from '@/components/custom/EmptyState'
++import { timeAgo } from '@/lib/utils'
++
++const statusIcon = (status: string) => {
++  switch (status) {
++    case 'open': return <AlertTriangle className="w-4 h-4 text-amber-500" />
++    case 'in_progress': return <Clock className="w-4 h-4 text-blue-500" />
++    case 'resolved': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />
++    case 'escalated': return <AlertTriangle className="w-4 h-4 text-destructive" />
++    default: return <MessageSquare className="w-4 h-4 text-muted-foreground" />
++  }
++}
++
++const statusColor: Record<string, string> = {
++  open: 'text-amber-600 bg-amber-500/10',
++  in_progress: 'text-blue-600 bg-blue-500/10',
++  resolved: 'text-emerald-600 bg-emerald-500/10',
++  escalated: 'text-destructive bg-destructive/10',
++}
++
++export default function ComplaintDetailScreen() {
++  const { id } = useParams<{ id: string }>()
++  const [complaint, setComplaint] = useState<Complaint | null>(null)
++  const [messages, setMessages] = useState<ComplaintMessage[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [reply, setReply] = useState('')
++  const [sending, setSending] = useState(false)
++  const [replyError, setReplyError] = useState('')
++
++  const load = useCallback(async () => {
++    if (!id) return
++    setLoading(true)
++    setError('')
++    try {
++      const [c, msgs] = await Promise.all([
++        complaintsService.getById(id),
++        complaintsService.getMessages(id),
++      ])
++      setComplaint(c)
++      setMessages(msgs)
++    } catch {
++      setError('Could not load complaint.')
++    } finally {
++      setLoading(false)
++    }
++  }, [id])
++
++  useEffect(() => { load() }, [load])
++
++  const handleReply = async () => {
++    if (!id || !reply.trim()) return
++    setSending(true)
++    setReplyError('')
++    try {
++      const msg = await complaintsService.addMessage(id, reply.trim())
++      setMessages((prev) => [...prev, msg])
++      setReply('')
++    } catch (err) {
++      setReplyError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not send reply.')
++    } finally {
++      setSending(false)
++    }
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-3xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-32 rounded-xl bg-muted animate-pulse" />
++        <div className="h-48 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++  if (!complaint) return <ErrorState message="Complaint not found." />
++
++  return (
++    <div className="p-6 max-w-3xl mx-auto">
++      <Link to="/complaints" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
++        <ArrowLeft className="w-4 h-4" /> Back to complaints
++      </Link>
++
++      {/* Header */}
++      <div className="rounded-xl border bg-card p-5 mb-6">
++        <div className="flex items-start justify-between gap-4 mb-3">
++          <h1 className="text-h4 font-semibold text-foreground">{complaint.title}</h1>
++          <span className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold capitalize ${statusColor[complaint.status] ?? 'bg-muted text-muted-foreground'}`}>
++            {statusIcon(complaint.status)}
++            {complaint.status.replace('_', ' ')}
++          </span>
++        </div>
++        <div className="flex items-center gap-4 text-xs text-muted-foreground">
++          <span className="px-2 py-0.5 rounded bg-muted capitalize">{complaint.category}</span>
++          <span className={`font-semibold capitalize ${
++            complaint.priority === 'high' ? 'text-destructive' : complaint.priority === 'medium' ? 'text-amber-500' : ''
++          }`}>{complaint.priority} priority</span>
++          <span>{timeAgo(complaint.created_at)}</span>
++        </div>
++      </div>
++
++      {/* Messages */}
++      <div className="space-y-4 mb-6">
++        {/* Original complaint */}
++        <div className="rounded-xl border bg-card p-4">
++          <div className="flex items-center gap-2 mb-2">
++            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
++              {complaint.creator?.first_name?.charAt(0) ?? 'Y'}
++            </div>
++            <span className="text-sm font-medium text-foreground">You</span>
++            <span className="text-xs text-muted-foreground">{timeAgo(complaint.created_at)}</span>
++          </div>
++          <p className="text-sm text-foreground whitespace-pre-wrap">{complaint.description}</p>
++        </div>
++
++        {/* Replies */}
++        {messages.map((msg) => {
++          const isMe = msg.sender_id !== complaint.created_by // landlord/agent messages
++          return (
++            <div key={msg.id} className={`rounded-xl border p-4 ${isMe ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
++              <div className="flex items-center gap-2 mb-2">
++                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
++                  {msg.sender?.first_name?.charAt(0) ?? (isMe ? 'L' : '?')}
++                </div>
++                <span className="text-sm font-medium text-foreground">
++                  {msg.sender?.first_name ? `${msg.sender.first_name} ${msg.sender.last_name ?? ''}` : 'Landlord'}
++                </span>
++                <span className="text-xs text-muted-foreground">{timeAgo(msg.created_at)}</span>
++              </div>
++              <p className="text-sm text-foreground whitespace-pre-wrap">{msg.message}</p>
++            </div>
++          )
++        })}
++      </div>
++
++      {/* Reply input */}
++      {complaint.status !== 'resolved' ? (
++        <div className="rounded-xl border bg-card p-4">
++          {replyError && <p className="text-sm text-destructive mb-3 p-2 rounded-lg bg-destructive/10">{replyError}</p>}
++          <div className="flex gap-2">
++            <input
++              type="text" value={reply} onChange={(e) => setReply(e.target.value)}
++              onKeyDown={(e) => e.key === 'Enter' && handleReply()}
++              placeholder="Write a reply..."
++              className="flex-1 h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++            />
++            <button
++              onClick={handleReply} disabled={sending || !reply.trim()}
++              className="shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
++            >
++              <Send className="w-4 h-4" />
++            </button>
++          </div>
++        </div>
++      ) : (
++        <div className="text-center py-4 text-sm text-muted-foreground">This complaint has been resolved.</div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add web/src/pages/tenant/NewComplaint.tsx web/src/pages/tenant/ComplaintDetail.tsx
++git commit -m "feat: add tenant NewComplaint and ComplaintDetail pages"
++```
++
++---
++
++### Task 5: Roommates List Page
++
++**Files:**
++- Create: `web/src/pages/tenant/RoommatesList.tsx`
++
++**Interfaces:**
++- Consumes: `roommatesService.getReceivedRequests()`, `roommatesService.sendRequest(userId)`, `tenanciesService.getTenantTenancies()`, `RoommateRequest`
++- Produces: `default export function RoommatesListScreen()`
++
++Note: No public `list()`/`search()` API exists for roommates. The page fetches the user's active tenancy and other users via the requests service. Lists available roommate candidates from the requests context and provides send-request capability.
++
++- [ ] **Step 1: Create RoommatesList.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { Search, Users, MapPin, Wallet, Send } from 'lucide-react'
++import { roommatesService, type RoommateRequest } from '@/services/roommates.service'
++import { tenanciesService } from '@/services/tenancies.service'
++import { EmptyState } from '@/components/custom/EmptyState'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { formatNGN } from '@/lib/utils'
++
++export default function RoommatesListScreen() {
++  const [requests, setRequests] = useState<RoommateRequest[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [sendingId, setSendingId] = useState<string | null>(null)
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const [received, sent] = await Promise.all([
++        roommatesService.getReceivedRequests(),
++        roommatesService.getSentRequests(),
++      ])
++      // Collect unique user profiles from requests for display
++      // In a real app, a dedicated browse endpoint would exist;
++      // for now, show existing connections from requests
++      setRequests([...received, ...sent])
++    } catch {
++      setError('Could not load roommates.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  const handleSendRequest = async (userId: string) => {
++    setSendingId(userId)
++    try {
++      await roommatesService.sendRequest(userId)
++      load() // refresh
++    } catch {
++      // silently fail, the user sees the list unchanged
++    } finally {
++      setSendingId(null)
++    }
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-4xl mx-auto">
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++          {Array.from({ length: 4 }).map((_, i) => (
++            <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />
++          ))}
++        </div>
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  // Extract unique profiles from requests
++  const seen = new Set<string>()
++  const profiles = requests.reduce<Array<{ userId: string; name: string; bio?: string }>>((acc, r) => {
++    const other = r.sender_id
++    if (seen.has(other)) return acc
++    seen.add(other)
++    acc.push({
++      userId: other,
++      name: r.sender ? `${r.sender.first_name} ${r.sender.last_name}` : 'Unknown',
++      bio: undefined,
++    })
++    return acc
++  }, [])
++
++  return (
++    <div className="p-6 max-w-4xl mx-auto">
++      <div className="flex items-center justify-between mb-6">
++        <div>
++          <h1 className="text-h2 text-foreground">Roommates</h1>
++          <p className="text-sm text-muted-foreground mt-1">Find and connect with potential roommates</p>
++        </div>
++      </div>
++
++      {profiles.length === 0 ? (
++        <EmptyState
++          title="No roommates found"
++          description="Roommate matches will appear here when you have an active tenancy. Check back once your application is approved."
++          icon={<Users className="w-12 h-12 text-muted-foreground" />}
++        />
++      ) : (
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++          {profiles.map((profile) => (
++            <div key={profile.userId} className="rounded-xl border bg-card p-5 hover:shadow-md transition-all">
++              <div className="flex items-start gap-4">
++                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary shrink-0">
++                  {profile.name.charAt(0)}
++                </div>
++                <div className="flex-1 min-w-0">
++                  <h3 className="font-semibold text-foreground">{profile.name}</h3>
++                  <p className="text-sm text-muted-foreground mt-1">
++                    Looking for a roommate
++                  </p>
++                </div>
++              </div>
++              <button
++                onClick={() => handleSendRequest(profile.userId)}
++                disabled={sendingId === profile.userId}
++                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-60 transition-opacity"
++              >
++                <Send className="w-4 h-4" />
++                {sendingId === profile.userId ? 'Sending...' : 'Send Request'}
++              </button>
++            </div>
++          ))}
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add web/src/pages/tenant/RoommatesList.tsx
++git commit -m "feat: add tenant Roommates List page"
++```
++
++---
++
++### Task 6: RoommateProfile + RoommateRequests Pages
++
++**Files:**
++- Create: `web/src/pages/tenant/RoommateProfile.tsx`
++- Create: `web/src/pages/tenant/RoommateRequests.tsx`
++
++**Interfaces:**
++- Consumes: `roommatesService.getProfile()`, `roommatesService.upsertProfile(data)`, `roommatesService.getReceivedRequests()`, `roommatesService.getSentRequests()`, `roommatesService.acceptRequest(id)`, `roommatesService.declineRequest(id)`, `RoommateProfile`, `RoommateRequest`
++- Produces: `default export function RoommateProfileScreen()`, `default export function RoommateRequestsScreen()`
++
++- [ ] **Step 1: Create RoommateProfile.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, User, Save } from 'lucide-react'
++import { roommatesService, type RoommateProfile } from '@/services/roommates.service'
++import { LAGOS_LGAS } from '@/constants/lgas'
++import { ErrorState } from '@/components/custom/ErrorState'
++
++export default function RoommateProfileScreen() {
++  const [profile, setProfile] = useState<RoommateProfile | null>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [editing, setEditing] = useState(false)
++  const [saving, setSaving] = useState(false)
++  const [saveError, setSaveError] = useState('')
++
++  // Form state
++  const [budgetMin, setBudgetMin] = useState('')
++  const [budgetMax, setBudgetMax] = useState('')
++  const [preferredLgas, setPreferredLgas] = useState<string[]>([])
++  const [bio, setBio] = useState('')
++  const [genderPref, setGenderPref] = useState<'male' | 'female' | 'any'>('any')
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const p = await roommatesService.getProfile()
++      setProfile(p)
++      if (p) {
++        setBudgetMin(p.budget_min?.toString() ?? '')
++        setBudgetMax(p.budget_max?.toString() ?? '')
++        setPreferredLgas(p.preferred_lgas ?? [])
++        setBio(p.bio ?? '')
++        setGenderPref(p.gender_preference ?? 'any')
++      }
++    } catch {
++      setError('Could not load profile.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  const handleSave = async () => {
++    setSaving(true)
++    setSaveError('')
++    try {
++      const data: any = {
++        budget_min: budgetMin ? Number(budgetMin) : undefined,
++        budget_max: budgetMax ? Number(budgetMax) : undefined,
++        preferred_lgas: preferredLgas,
++        bio: bio.trim() || undefined,
++        gender_preference: genderPref,
++      }
++      const updated = await roommatesService.upsertProfile(data)
++      setProfile(updated)
++      setEditing(false)
++    } catch (err) {
++      setSaveError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not save profile.')
++    } finally {
++      setSaving(false)
++    }
++  }
++
++  const toggleLga = (lga: string) => {
++    setPreferredLgas((prev) => prev.includes(lga) ? prev.filter((x) => x !== lga) : [...prev, lga])
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-2xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-64 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <div className="flex items-center justify-between mb-6">
++        <div>
++          <Link to="/roommates" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
++            <ArrowLeft className="w-4 h-4" /> Back to roommates
++          </Link>
++          <h1 className="text-h2 text-foreground">Your Roommate Profile</h1>
++        </div>
++        {!editing && (
++          <button onClick={() => setEditing(true)} className="px-4 py-2 rounded-xl border text-sm font-medium hover:bg-muted">
++            Edit
++          </button>
++        )}
++      </div>
++
++      {!editing ? (
++        /* View mode */
++        <div className="rounded-xl border bg-card p-6 space-y-6">
++          <div className="flex items-center gap-4">
++            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">
++              <User className="w-8 h-8" />
++            </div>
++            <div>
++              <h3 className="font-semibold text-foreground">
++                {profile?.user?.first_name ? `${profile.user.first_name} ${profile.user.last_name}` : 'Your Profile'}
++              </h3>
++              <p className="text-sm text-muted-foreground capitalize">Gender preference: {profile?.gender_preference ?? 'any'}</p>
++            </div>
++          </div>
++
++          {profile?.bio && (
++            <div>
++              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Bio</p>
++              <p className="text-sm text-foreground">{profile.bio}</p>
++            </div>
++          )}
++
++          <div className="grid grid-cols-2 gap-4">
++            {(profile?.budget_min != null || profile?.budget_max != null) && (
++              <div>
++                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Budget Range</p>
++                <p className="text-sm text-foreground">
++                  {profile?.budget_min ? `₦${profile.budget_min.toLocaleString()}` : '—'} – {profile?.budget_max ? `₦${profile.budget_max.toLocaleString()}` : '—'}
++                </p>
++              </div>
++            )}
++            {profile?.preferred_lgas && profile.preferred_lgas.length > 0 && (
++              <div>
++                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Preferred Locations</p>
++                <p className="text-sm text-foreground">{profile.preferred_lgas.join(', ')}</p>
++              </div>
++            )}
++          </div>
++        </div>
++      ) : (
++        /* Edit mode */
++        <div className="rounded-xl border bg-card p-6 space-y-5">
++          {/* Budget range */}
++          <div className="grid grid-cols-2 gap-3">
++            <div>
++              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Min Budget (₦)</label>
++              <input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)}
++                placeholder="e.g. 200000"
++                className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
++            </div>
++            <div>
++              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Max Budget (₦)</label>
++              <input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)}
++                placeholder="e.g. 500000"
++                className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
++            </div>
++          </div>
++
++          {/* Preferred LGAs */}
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Preferred Locations (LGA)</label>
++            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
++              {LAGOS_LGAS.map((lga) => (
++                <button key={lga} onClick={() => toggleLga(lga)}
++                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
++                    preferredLgas.includes(lga) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++                  }`}>
++                  {lga}
++                </button>
++              ))}
++            </div>
++          </div>
++
++          {/* Gender preference */}
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Gender Preference</label>
++            <div className="flex gap-2">
++              {(['male', 'female', 'any'] as const).map((g) => (
++                <button key={g} onClick={() => setGenderPref(g)}
++                  className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
++                    genderPref === g ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++                  }`}>
++                  {g}
++                </button>
++              ))}
++            </div>
++          </div>
++
++          {/* Bio */}
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Bio</label>
++            <textarea value={bio} onChange={(e) => setBio(e.target.value)}
++              placeholder="Tell potential roommates about yourself..."
++              rows={4}
++              className="w-full px-4 py-3 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
++          </div>
++
++          {saveError && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{saveError}</p>}
++
++          <div className="flex gap-2">
++            <button onClick={() => { setEditing(false); load(); }}
++              className="flex-1 h-11 rounded-xl border text-sm font-medium hover:bg-muted">
++              Cancel
++            </button>
++            <button onClick={handleSave} disabled={saving}
++              className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2">
++              <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
++            </button>
++          </div>
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Create RoommateRequests.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, User, Check, X } from 'lucide-react'
++import { roommatesService, type RoommateRequest } from '@/services/roommates.service'
++import { EmptyState } from '@/components/custom/EmptyState'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { timeAgo } from '@/lib/utils'
++
++export default function RoommateRequestsScreen() {
++  const [received, setReceived] = useState<RoommateRequest[]>([])
++  const [sent, setSent] = useState<RoommateRequest[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [tab, setTab] = useState<'received' | 'sent'>('received')
++  const [actingId, setActingId] = useState<string | null>(null)
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const [r, s] = await Promise.all([
++        roommatesService.getReceivedRequests(),
++        roommatesService.getSentRequests(),
++      ])
++      setReceived(r)
++      setSent(s)
++    } catch {
++      setError('Could not load requests.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  const handleAccept = async (id: string) => {
++    setActingId(id)
++    try { await roommatesService.acceptRequest(id); load() }
++    catch { /* silently fail */ }
++    finally { setActingId(null) }
++  }
++
++  const handleDecline = async (id: string) => {
++    setActingId(id)
++    try { await roommatesService.declineRequest(id); load() }
++    catch { /* silently fail */ }
++    finally { setActingId(null) }
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-2xl mx-auto space-y-4">
++        {Array.from({ length: 3 }).map((_, i) => (
++          <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
++        ))}
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  const pending = received.filter((r) => r.status === 'pending')
++  const current = tab === 'received' ? received : sent
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <Link to="/roommates" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
++        <ArrowLeft className="w-4 h-4" /> Back to roommates
++      </Link>
++      <h1 className="text-h2 text-foreground mb-6">Requests</h1>
++
++      {/* Tabs */}
++      <div className="flex gap-2 mb-6">
++        <button
++          onClick={() => setTab('received')}
++          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
++            tab === 'received' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++          }`}
++        >
++          Received ({pending.length > 0 ? pending.length : received.length})
++        </button>
++        <button
++          onClick={() => setTab('sent')}
++          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
++            tab === 'sent' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++          }`}
++        >
++          Sent ({sent.length})
++        </button>
++      </div>
++
++      {current.length === 0 ? (
++        <EmptyState
++          title={tab === 'received' ? 'No received requests' : 'No sent requests'}
++          description={tab === 'received' ? 'Roommate requests you receive will appear here.' : 'You haven\'t sent any roommate requests yet.'}
++        />
++      ) : (
++        <div className="space-y-3">
++          {current.map((r) => {
++            const person = tab === 'received' ? r.sender : r.receiver
++            return (
++              <div key={r.id} className="flex items-center gap-4 p-4 rounded-xl border bg-card">
++                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
++                  {person?.first_name?.charAt(0) ?? '?'}
++                </div>
++                <div className="flex-1 min-w-0">
++                  <p className="font-medium text-foreground text-sm">
++                    {person ? `${person.first_name} ${person.last_name}` : 'Unknown'}
++                  </p>
++                  <p className="text-xs text-muted-foreground mt-0.5">
++                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold capitalize ${
++                      r.status === 'pending' ? 'bg-amber-500/10 text-amber-600' :
++                      r.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-600' :
++                      'bg-muted text-muted-foreground'
++                    }`}>{r.status}</span>
++                    {' '}· {timeAgo(r.created_at)}
++                  </p>
++                </div>
++                {tab === 'received' && r.status === 'pending' && (
++                  <div className="flex gap-1.5 shrink-0">
++                    <button
++                      onClick={() => handleAccept(r.id)} disabled={actingId === r.id}
++                      className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-50"
++                    >
++                      <Check className="w-4 h-4" />
++                    </button>
++                    <button
++                      onClick={() => handleDecline(r.id)} disabled={actingId === r.id}
++                      className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 disabled:opacity-50"
++                    >
++                      <X className="w-4 h-4" />
++                    </button>
++                  </div>
++                )}
++              </div>
++            )
++          })}
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 4: Commit**
++
++```bash
++git add web/src/pages/tenant/RoommateProfile.tsx web/src/pages/tenant/RoommateRequests.tsx
++git commit -m "feat: add tenant Roommate Profile and Requests pages"
++```
++
++---
++
++### Task 7: Shared KYC Pages (5 pages)
++
++**Files:**
++- Create: `web/src/pages/shared/KycOverview.tsx`
++- Create: `web/src/pages/shared/KycBvn.tsx`
++- Create: `web/src/pages/shared/KycNin.tsx`
++- Create: `web/src/pages/shared/KycStudent.tsx`
++- Create: `web/src/pages/shared/KycReview.tsx`
++
++**Interfaces:**
++- Consumes: `kycService.getStatus()`, `kycService.submitBvn(bvn)`, `kycService.submitNin(nin)`, `kycService.submitStudentId(formData)`
++- Produces: 5 default-exported page components
++
++Note: The `kycService.getStatus()` returns `{ status: string; message?: string }`. No per-method breakdown exists, so KycOverview shows the overall status and links to individual methods. KycReview re-fetches status.
++
++- [ ] **Step 1: Create KycOverview.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { Link } from 'react-router-dom'
++import { Shield, CreditCard, IdCard, GraduationCap, CheckCircle2, Clock, XCircle, ChevronRight } from 'lucide-react'
++import { kycService } from '@/services/kyc.service'
++import { ErrorState } from '@/components/custom/ErrorState'
++
++export default function KycOverviewScreen() {
++  const [status, setStatus] = useState<{ status: string; message?: string } | null>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const s = await kycService.getStatus()
++      setStatus(s)
++    } catch {
++      setError('Could not load KYC status.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  const methods = [
++    { to: '/kyc/bvn', icon: CreditCard, label: 'BVN Verification', desc: 'Bank Verification Number' },
++    { to: '/kyc/nin', icon: IdCard, label: 'NIN Verification', desc: 'National Identification Number' },
++    { to: '/kyc/student', icon: GraduationCap, label: 'Student Verification', desc: 'Student ID verification' },
++  ]
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-2xl mx-auto space-y-4">
++        <div className="h-8 bg-muted rounded w-48 animate-pulse" />
++        {Array.from({ length: 3 }).map((_, i) => (
++          <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />
++        ))}
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <h1 className="text-h2 text-foreground mb-2">Identity Verification</h1>
++      <p className="text-sm text-muted-foreground mb-6">Verify your identity to unlock full platform features.</p>
++
++      {/* Overall status */}
++      <div className="rounded-xl border bg-card p-5 mb-6">
++        <div className="flex items-center gap-3">
++          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
++            <Shield className="w-5 h-5 text-primary" />
++          </div>
++          <div>
++            <p className="text-sm text-muted-foreground">Overall Status</p>
++            <p className="font-semibold text-foreground capitalize">{status?.status?.replace('_', ' ') ?? 'Unknown'}</p>
++          </div>
++        </div>
++        {status?.message && (
++          <p className="text-sm text-muted-foreground mt-3 p-3 rounded-lg bg-muted">{status.message}</p>
++        )}
++      </div>
++
++      {/* Method cards */}
++      <div className="space-y-3">
++        {methods.map((m) => (
++          <Link
++            key={m.to}
++            to={m.to}
++            className="flex items-center gap-4 p-4 rounded-xl border bg-card hover:shadow-md transition-all group"
++          >
++            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
++              <m.icon className="w-5 h-5 text-muted-foreground" />
++            </div>
++            <div className="flex-1">
++              <h3 className="font-semibold text-foreground text-sm">{m.label}</h3>
++              <p className="text-xs text-muted-foreground">{m.desc}</p>
++            </div>
++            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
++          </Link>
++        ))}
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Create KycBvn.tsx**
++
++```tsx
++import { useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, CheckCircle2 } from 'lucide-react'
++import { kycService } from '@/services/kyc.service'
++
++export default function KycBvnScreen() {
++  const [bvn, setBvn] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++  const [success, setSuccess] = useState(false)
++
++  const handleSubmit = async () => {
++    if (!/^\d{11}$/.test(bvn)) { setError('Enter a valid 11-digit BVN.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      await kycService.submitBvn(bvn)
++      setSuccess(true)
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'BVN verification failed.')
++    } finally {
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <Link to="/kyc" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back to KYC
++      </Link>
++      <h1 className="text-h2 text-foreground mb-6">BVN Verification</h1>
++
++      {success ? (
++        <div className="rounded-xl border bg-card p-8 text-center">
++          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
++          <h3 className="text-lg font-semibold text-foreground mb-2">BVN Submitted</h3>
++          <p className="text-sm text-muted-foreground mb-4">Your BVN has been submitted for verification. We'll notify you once it's confirmed.</p>
++          <Link to="/kyc" className="text-sm font-medium text-primary hover:underline">Back to KYC</Link>
++        </div>
++      ) : (
++        <div className="rounded-xl border bg-card p-6 space-y-5">
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">BVN (11 digits)</label>
++            <input
++              type="text" value={bvn} onChange={(e) => setBvn(e.target.value.replace(/\D/g, '').slice(0, 11))}
++              placeholder="Enter your BVN"
++              maxLength={11}
++              className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono tracking-widest"
++            />
++          </div>
++          {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++          <button onClick={handleSubmit} disabled={submitting}
++            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity">
++            {submitting ? 'Verifying...' : 'Verify BVN'}
++          </button>
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 3: Create KycNin.tsx**
++
++```tsx
++import { useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, CheckCircle2 } from 'lucide-react'
++import { kycService } from '@/services/kyc.service'
++
++export default function KycNinScreen() {
++  const [nin, setNin] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++  const [success, setSuccess] = useState(false)
++
++  const handleSubmit = async () => {
++    if (!/^\d{11}$/.test(nin)) { setError('Enter a valid 11-digit NIN.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      await kycService.submitNin(nin)
++      setSuccess(true)
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'NIN verification failed.')
++    } finally {
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <Link to="/kyc" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back to KYC
++      </Link>
++      <h1 className="text-h2 text-foreground mb-6">NIN Verification</h1>
++
++      {success ? (
++        <div className="rounded-xl border bg-card p-8 text-center">
++          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
++          <h3 className="text-lg font-semibold text-foreground mb-2">NIN Submitted</h3>
++          <p className="text-sm text-muted-foreground mb-4">Your NIN has been submitted for verification. We'll notify you once it's confirmed.</p>
++          <Link to="/kyc" className="text-sm font-medium text-primary hover:underline">Back to KYC</Link>
++        </div>
++      ) : (
++        <div className="rounded-xl border bg-card p-6 space-y-5">
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">NIN (11 digits)</label>
++            <input
++              type="text" value={nin} onChange={(e) => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
++              placeholder="Enter your NIN"
++              maxLength={11}
++              className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono tracking-widest"
++            />
++          </div>
++          {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++          <button onClick={handleSubmit} disabled={submitting}
++            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity">
++            {submitting ? 'Verifying...' : 'Verify NIN'}
++          </button>
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 4: Create KycStudent.tsx**
++
++```tsx
++import { useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, CheckCircle2 } from 'lucide-react'
++import { kycService } from '@/services/kyc.service'
++
++export default function KycStudentScreen() {
++  const [school, setSchool] = useState('')
++  const [matricNumber, setMatricNumber] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++  const [success, setSuccess] = useState(false)
++
++  const handleSubmit = async () => {
++    if (!school.trim()) { setError('School name is required.'); return }
++    if (!matricNumber.trim()) { setError('Matriculation number is required.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      const fd = new FormData()
++      fd.append('school', school.trim())
++      fd.append('matric_number', matricNumber.trim())
++      await kycService.submitStudentId(fd)
++      setSuccess(true)
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Student verification failed.')
++    } finally {
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <Link to="/kyc" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back to KYC
++      </Link>
++      <h1 className="text-h2 text-foreground mb-6">Student Verification</h1>
++
++      {success ? (
++        <div className="rounded-xl border bg-card p-8 text-center">
++          <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
++          <h3 className="text-lg font-semibold text-foreground mb-2">Student ID Submitted</h3>
++          <p className="text-sm text-muted-foreground mb-4">Your student information has been submitted for verification.</p>
++          <Link to="/kyc" className="text-sm font-medium text-primary hover:underline">Back to KYC</Link>
++        </div>
++      ) : (
++        <div className="rounded-xl border bg-card p-6 space-y-5">
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">School Name</label>
++            <input type="text" value={school} onChange={(e) => setSchool(e.target.value)}
++              placeholder="e.g. University of Lagos"
++              className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
++          </div>
++          <div>
++            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Matriculation Number</label>
++            <input type="text" value={matricNumber} onChange={(e) => setMatricNumber(e.target.value)}
++              placeholder="e.g. 190802001"
++              className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
++          </div>
++          {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++          <button onClick={handleSubmit} disabled={submitting}
++            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity">
++            {submitting ? 'Verifying...' : 'Verify Student ID'}
++          </button>
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 5: Create KycReview.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { Link } from 'react-router-dom'
++import { ArrowLeft, Shield, FileText } from 'lucide-react'
++import { kycService } from '@/services/kyc.service'
++import { ErrorState } from '@/components/custom/ErrorState'
++
++export default function KycReviewScreen() {
++  const [status, setStatus] = useState<{ status: string; message?: string } | null>(null)
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const s = await kycService.getStatus()
++      setStatus(s)
++    } catch {
++      setError('Could not load KYC status.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-40 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  return (
++    <div className="p-6 max-w-xl mx-auto">
++      <Link to="/kyc" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back to KYC
++      </Link>
++      <h1 className="text-h2 text-foreground mb-6">KYC Review</h1>
++
++      <div className="rounded-xl border bg-card p-6">
++        <div className="flex items-center gap-3 mb-6">
++          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
++            <Shield className="w-6 h-6 text-primary" />
++          </div>
++          <div>
++            <h3 className="font-semibold text-foreground">Verification Status</h3>
++            <p className={`text-sm font-medium capitalize ${
++              status?.status === 'verified' ? 'text-emerald-600' :
++              status?.status === 'pending' ? 'text-amber-600' :
++              status?.status === 'rejected' ? 'text-destructive' :
++              'text-muted-foreground'
++            }`}>
++              {status?.status?.replace('_', ' ') ?? 'Not submitted'}
++            </p>
++          </div>
++        </div>
++
++        {status?.message && (
++          <div className="p-4 rounded-xl bg-muted">
++            <div className="flex items-center gap-2 mb-2">
++              <FileText className="w-4 h-4 text-muted-foreground" />
++              <span className="text-sm font-medium text-foreground">Details</span>
++            </div>
++            <p className="text-sm text-muted-foreground">{status.message}</p>
++          </div>
++        )}
++
++        {!status?.status || status.status === 'rejected' ? (
++          <div className="mt-6 pt-4 border-t">
++            <p className="text-sm text-muted-foreground mb-4">You can retry verification by visiting one of the methods below:</p>
++            <div className="flex flex-wrap gap-2">
++              <Link to="/kyc/bvn" className="px-4 py-2 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80">BVN</Link>
++              <Link to="/kyc/nin" className="px-4 py-2 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80">NIN</Link>
++              <Link to="/kyc/student" className="px-4 py-2 rounded-lg bg-muted text-sm font-medium hover:bg-muted/80">Student ID</Link>
++            </div>
++          </div>
++        ) : null}
++      </div>
++    </div>
++  )
++}
++```
++
++- [ ] **Step 6: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add web/src/pages/shared/
++git commit -m "feat: add shared KYC pages (Overview, BVN, NIN, Student, Review)"
++```
++
++---
++
++### Task 8: Shared Notifications Page
++
++**Files:**
++- Create: `web/src/pages/shared/Notifications.tsx`
++
++**Interfaces:**
++- Consumes: `notificationsService.list()`, `notificationsService.markRead(id)`, `notificationsService.markAllRead()`, `AppNotification`
++- Produces: `default export function NotificationsScreen()`
++
++- [ ] **Step 1: Create Notifications.tsx**
++
++```tsx
++import { useCallback, useEffect, useState } from 'react'
++import { CreditCard, Building2, MessageSquare, Bell, CheckCheck } from 'lucide-react'
++import { notificationsService, type AppNotification } from '@/services/notifications.service'
++import { EmptyState } from '@/components/custom/EmptyState'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { timeAgo } from '@/lib/utils'
++
++const typeIcon = (type: string) => {
++  switch (type) {
++    case 'payment': return <CreditCard className="w-4 h-4" />
++    case 'tenancy': return <Building2 className="w-4 h-4" />
++    case 'complaint': return <MessageSquare className="w-4 h-4" />
++    default: return <Bell className="w-4 h-4" />
++  }
++}
++
++export default function NotificationsScreen() {
++  const [notifs, setNotifs] = useState<AppNotification[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [markingAll, setMarkingAll] = useState(false)
++
++  const load = useCallback(async () => {
++    setLoading(true)
++    setError('')
++    try {
++      const data = await notificationsService.list()
++      setNotifs(data)
++    } catch {
++      setError('Could not load notifications.')
++    } finally {
++      setLoading(false)
++    }
++  }, [])
++
++  useEffect(() => { load() }, [load])
++
++  const handleMarkRead = async (id: string) => {
++    try {
++      await notificationsService.markRead(id)
++      setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))
++    } catch { /* silently fail */ }
++  }
++
++  const handleMarkAllRead = async () => {
++    setMarkingAll(true)
++    try {
++      await notificationsService.markAllRead()
++      setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })))
++    } catch { /* silently fail */ }
++    finally { setMarkingAll(false) }
++  }
++
++  const unreadCount = notifs.filter((n) => !n.is_read).length
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-2xl mx-auto space-y-3">
++        <div className="h-8 bg-muted rounded w-32 animate-pulse mb-4" />
++        {Array.from({ length: 5 }).map((_, i) => (
++          <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
++        ))}
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <div className="flex items-center justify-between mb-6">
++        <div>
++          <h1 className="text-h2 text-foreground">Notifications</h1>
++          {unreadCount > 0 && (
++            <p className="text-sm text-muted-foreground mt-1">{unreadCount} unread</p>
++          )}
++        </div>
++        {unreadCount > 0 && (
++          <button
++            onClick={handleMarkAllRead} disabled={markingAll}
++            className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium hover:bg-muted disabled:opacity-50"
++          >
++            <CheckCheck className="w-4 h-4" /> Mark all read
++          </button>
++        )}
++      </div>
++
++      {notifs.length === 0 ? (
++        <EmptyState
++          title="No notifications"
++          description="You're all caught up! Notifications about your tenancy, payments, and complaints will appear here."
++          icon={<Bell className="w-12 h-12 text-muted-foreground" />}
++        />
++      ) : (
++        <div className="space-y-2">
++          {notifs.map((n) => (
++            <button
++              key={n.id}
++              onClick={() => !n.is_read && handleMarkRead(n.id)}
++              className={`w-full text-left flex items-start gap-4 p-4 rounded-xl border transition-colors ${
++                n.is_read ? 'bg-card' : 'bg-primary/5 border-primary/20'
++              }`}
++            >
++              <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
++                n.is_read ? 'bg-muted' : 'bg-primary/10'
++              }`}>
++                <span className={n.is_read ? 'text-muted-foreground' : 'text-primary'}>
++                  {typeIcon(n.type)}
++                </span>
++              </div>
++              <div className="flex-1 min-w-0">
++                <div className="flex items-center justify-between gap-2">
++                  <span className={`text-sm font-medium ${n.is_read ? 'text-foreground' : 'text-foreground'}`}>
++                    {n.title}
++                  </span>
++                  {!n.is_read && <span className="shrink-0 w-2 h-2 rounded-full bg-primary" />}
++                </div>
++                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
++                <p className="text-xs text-muted-foreground mt-1">{timeAgo(n.created_at)}</p>
++              </div>
++            </button>
++          ))}
++        </div>
++      )}
++    </div>
++  )
++}
++```
++
++- [ ] **Step 2: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -20
++```
++Expected: no new errors.
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add web/src/pages/shared/Notifications.tsx
++git commit -m "feat: add shared Notifications page"
++```
++
++---
++
++### Task 9: Router Wiring — Replace All 15 Placeholders
++
++**Files:**
++- Modify: `web/src/App.tsx`
++
++**Interfaces:**
++- Consumes: All page components from Tasks 1–8
++- Produces: No more Placeholder references in tenant or shared routes
++
++- [ ] **Step 1: Update App.tsx imports**
++
++Add the new imports after the existing tenant page imports (after line 26):
++
++```tsx
++// Tenant pages (new)
++import ApplyScreen from '@/pages/tenant/Apply'
++import TenancyDetailScreen from '@/pages/tenant/TenancyDetail'
++import PayRentScreen from '@/pages/tenant/PayRent'
++import ReceiptScreen from '@/pages/tenant/Receipt'
++import NewComplaintScreen from '@/pages/tenant/NewComplaint'
++import ComplaintDetailScreen from '@/pages/tenant/ComplaintDetail'
++import RoommatesListScreen from '@/pages/tenant/RoommatesList'
++import RoommateProfileScreen from '@/pages/tenant/RoommateProfile'
++import RoommateRequestsScreen from '@/pages/tenant/RoommateRequests'
++
++// Shared pages
++import KycOverviewScreen from '@/pages/shared/KycOverview'
++import KycBvnScreen from '@/pages/shared/KycBvn'
++import KycNinScreen from '@/pages/shared/KycNin'
++import KycStudentScreen from '@/pages/shared/KycStudent'
++import KycReviewScreen from '@/pages/shared/KycReview'
++import NotificationsScreen from '@/pages/shared/Notifications'
++```
++
++- [ ] **Step 2: Replace tenant placeholder routes**
++
++Replace lines 64–82 (the tenant routes using `<Placeholder>`):
++
++```tsx
++                <Route path="/apply/:propertyId" element={<ApplyScreen />} />
++                <Route path="/tenancy/:id" element={<TenancyDetailScreen />} />
++                <Route path="/payments/pay" element={<PayRentScreen />} />
++                <Route path="/payments/receipt" element={<ReceiptScreen />} />
++                <Route path="/complaints/new" element={<NewComplaintScreen />} />
++                <Route path="/complaints/:id" element={<ComplaintDetailScreen />} />
++                <Route path="/roommates" element={<RoommatesListScreen />} />
++                <Route path="/roommates/profile" element={<RoommateProfileScreen />} />
++                <Route path="/roommates/requests" element={<RoommateRequestsScreen />} />
++                <Route path="/notifications" element={<NotificationsScreen />} />
++                <Route path="/kyc" element={<KycOverviewScreen />} />
++                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
++                <Route path="/kyc/nin" element={<KycNinScreen />} />
++                <Route path="/kyc/student" element={<KycStudentScreen />} />
++                <Route path="/kyc/review" element={<KycReviewScreen />} />
++```
++
++- [ ] **Step 3: Replace landlord placeholder routes for shared KYC + notifications**
++
++Replace lines 101–107 (landlord KYC/notifications placeholders):
++
++```tsx
++                <Route path="/notifications" element={<NotificationsScreen />} />
++                <Route path="/kyc" element={<KycOverviewScreen />} />
++                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
++                <Route path="/kyc/nin" element={<KycNinScreen />} />
++                <Route path="/kyc/student" element={<KycStudentScreen />} />
++                <Route path="/kyc/review" element={<KycReviewScreen />} />
++```
++
++- [ ] **Step 4: Remove Placeholder import**
++
++Remove line 38: `import { Placeholder } from '@/pages/Placeholder'`
++
++- [ ] **Step 5: Verify TypeScript compilation**
++
++```bash
++cd web && npx tsc --noEmit --pretty 2>&1 | head -40
++```
++Expected: no errors.
++
++- [ ] **Step 6: Verify production build**
++
++```bash
++cd web && npm run build 2>&1 | tail -10
++```
++Expected: build succeeds.
++
++- [ ] **Step 7: Commit**
++
++```bash
++git add web/src/App.tsx
++git commit -m "feat: wire all tenant and shared page routes, remove Placeholder"
++```
+diff --git a/docs/superpowers/specs/2026-07-10-tenant-web-pages-design.md b/docs/superpowers/specs/2026-07-10-tenant-web-pages-design.md
+new file mode 100644
+index 0000000..b56fe0b
+--- /dev/null
++++ b/docs/superpowers/specs/2026-07-10-tenant-web-pages-design.md
+@@ -0,0 +1,221 @@
++# Tenant Web Pages — Full Implementation
++
++**Date:** 2026-07-10
++**Status:** Approved
++**Scope:** Replace 15 Placeholder routes with real pages — 9 tenant-specific + 6 shared (both roles)
++
++## Context
++
++The web app (React + Vite + Tailwind) has 5 built tenant pages (Home, PropertyDetail, Tenancy,
++Payments, Complaints) and 15 placeholder routes. The landlord batch (6 pages) is complete.
++This spec covers the remaining tenant and shared pages. Desktop-first, power-user oriented —
++mirroring mobile features where sensible but enhancing with richer layouts (tables, inline
++editing, keyboard-friendly forms) for desktop use.
++
++## Pages to Build (15)
++
++### Tenant-Specific (9 pages)
++
++| Route | Page | Purpose |
++|---|---|---|
++| `/apply/:propertyId` | Apply | Form: tenancy type, move-in date, message. Property summary card. Submit → API |
++| `/tenancy/:id` | TenancyDetail | Info cards: property, rent, dates, landlord, status. Terminate + payment history |
++| `/payments/pay` | PayRent | Form: amount, payment method. Initiates Paystack checkout flow |
++| `/payments/receipt` | Receipt | Receipt view (router state or fetch by ID). Print-friendly, reference + amount + date |
++| `/complaints/new` | NewComplaint | Form: title, category, priority, description, optional photo |
++| `/complaints/:id` | ComplaintDetail | Message thread/timeline, status badge, follow-up reply input |
++| `/roommates` | RoommatesList | Filterable grid: budget, location, occupation, lifestyle tags |
++| `/roommates/profile` | RoommateProfile | View/edit own roommate profile form |
++| `/roommates/requests` | RoommateRequests | Sent/received requests with status, accept/reject on incoming |
++
++### Shared Pages — Both Roles (6 pages)
++
++| Route | Page | Purpose |
++|---|---|---|
++| `/kyc` | KycOverview | Verification dashboard: method list with status per method |
++| `/kyc/bvn` | KycBvn | BVN verification form: number input, validation, submit |
++| `/kyc/nin` | KycNin | NIN verification form: NIN input + optional document upload |
++| `/kyc/student` | KycStudent | Student verification: school, matric number, ID upload |
++| `/kyc/review` | KycReview | Submitted KYC data display with verification status/result |
++| `/notifications` | Notifications | Paginated list, read/unread styling, click-to-mark-read, type icons |
++
++## API Surface (Already Wired)
++
++All endpoints already exist in `web/src/services/`:
++
++- `tenanciesService.apply(data)` — submit application
++- `tenanciesService.getTenantTenancies()` — list tenant's tenancies
++- `tenanciesService.getById(id)` — single tenancy detail
++- `tenanciesService.terminate(id)` — terminate tenancy
++- `paymentsService.getHistory()` — payment transaction list
++- `paymentsService.initiatePayment(data)` — start Paystack checkout
++- `paymentsService.getReceipt(id)` — fetch receipt
++- `complaintsService.list()` — list complaints
++- `complaintsService.create(data)` — file complaint
++- `complaintsService.getById(id)` — complaint detail with messages
++- `complaintsService.reply(id, message)` — add follow-up
++- `roommatesService.list(filters)` — browse roommate profiles
++- `roommatesService.getProfile()` — get own profile
++- `roommatesService.updateProfile(data)` — update own profile
++- `roommatesService.getRequests()` — list requests
++- `roommatesService.sendRequest(userId)` — send connection request
++- `roommatesService.respondRequest(requestId, action)` — accept/reject
++- `notificationsService.list()` — paginated notifications
++- `notificationsService.markRead(id)` — mark single as read
++- `kycService.getStatus()` — KYC overview
++- `kycService.verifyBvn(data)` — BVN verification
++- `kycService.verifyNin(data)` — NIN verification
++- `kycService.verifyStudent(data)` — student verification
++
++## UI Patterns (Follow Existing Conventions)
++
++Every page follows the established patterns from the landlord batch and existing tenant pages:
++
++1. **Loading:** Tailwind `animate-pulse` skeleton placeholders
++2. **Error:** `<ErrorState message={error} onRetry={load} />`
++3. **Empty:** `<EmptyState title="..." description="..." />` with optional CTA action
++4. **Data:** Cards, tables, badges — same color tokens (`brand-green`, `emerald`, `amber`, `muted`, `destructive`)
++5. **Data fetching:** `useState` + `useCallback` + `useEffect` pattern
++6. **Icons:** `lucide-react`
++7. **Layout:** All pages render inside `<TenantLayout>` via `<Outlet />`
++
++## Page Details
++
++### Apply (`/apply/:propertyId`)
++
++- Fetch property by ID, show summary card (title, address, rent amounts)
++- Tenancy type toggle (yearly/monthly) with contextual help text
++- Move-in date input (text with YYYY-MM-DD format hint)
++- Optional message textarea (occupation, occupants, references)
++- Info banner explaining review process
++- Submit → `tenanciesService.apply()` → success alert → redirect to /tenancy
++- Cancel button → navigate back
++
++### TenancyDetail (`/tenancy/:id`)
++
++- Fetch tenancy by ID via `tenanciesService.getById(id)`
++- Info cards: property name (linked), rent amount, start/end dates, landlord contact, status badge
++- Payment history section for this tenancy (filtered from payments)
++- Terminate button with confirmation dialog (matching landlord TenancyDetail pattern)
++- Error handling with type assertion on catch (matching the fix applied in landlord batch)
++
++### PayRent (`/payments/pay`)
++
++- Show outstanding balance if available
++- Amount input (pre-filled with rent amount if tenancy is active)
++- Payment method selector (Paystack card/bank/transfer)
++- Submit → `paymentsService.initiatePayment()` → redirect to Paystack URL
++- Form validation: amount > 0 required
++
++### Receipt (`/payments/receipt`)
++
++- Read transaction from router state (via `useLocation`) or fetch by query param ID
++- Print-friendly layout: AssetHub logo/name, transaction reference, amount, date, property, status
++- Download as PDF button (or browser print)
++- Back to payments link
++
++### NewComplaint (`/complaints/new`)
++
++- Form fields: title (text), category (dropdown: maintenance, utilities, security, noise, other), priority (low/medium/high), description (textarea)
++- Optional photo field (file input, deferred upload — same pattern as landlord)
++- Submit → `complaintsService.create()` → navigate to `/complaints/:newId`
++- Cancel → navigate back
++
++### ComplaintDetail (`/complaints/:id`)
++
++- Fetch complaint by ID → display in thread/timeline layout
++- Status badge (open/in_progress/escalated/resolved)
++- Metadata: category, priority, date filed
++- Message thread: original complaint + landlord responses + tenant follow-ups
++- Reply input at bottom (if status !== resolved)
++- Submit reply → `complaintsService.reply(id, message)` → refresh thread
++
++### RoommatesList (`/roommates`)
++
++- Fetch via `roommatesService.list(filters)`
++- Filter chips: budget range, preferred LGA, gender, occupation
++- Grid of profile cards: name, budget, location, occupation, lifestyle tags
++- Click card → view full profile (inline expand or link to profile if already connected)
++- Send request button on each card
++
++### RoommateProfile (`/roommates/profile`)
++
++- View mode: display current profile fields
++- Edit mode (toggle): form with budget range, preferred LGAs (multi-select chips), occupation, bio, lifestyle tags (tag input), gender
++- Save → `roommatesService.updateProfile(data)` → switch back to view mode
++- Cancel → discard changes, switch to view mode
++
++### RoommateRequests (`/roommates/requests`)
++
++- Two tabs: Sent (pending/accepted/rejected) and Received (pending action)
++- Incoming pending: accept/reject buttons → `roommatesService.respondRequest(id, action)`
++- Each card: name, profile snippet, status badge, time ago
++- Empty state per tab
++
++### KycOverview (`/kyc`)
++
++- Fetch KYC status via `kycService.getStatus()`
++- Cards for each method: BVN, NIN, Student — each shows status (not_started/pending/verified/rejected)
++- Click card → navigate to specific method page
++- Verified badge if all methods complete
++
++### KycBvn (`/kyc/bvn`)
++
++- Form: BVN (11-digit number), date of birth, submit
++- Validation: BVN format (11 digits)
++- Inline result display after submission (success/failure with reason)
++
++### KycNin (`/kyc/nin`)
++
++- Form: NIN (11-digit number), optional document upload
++- Validation: NIN format
++- Result display after submission
++
++### KycStudent (`/kyc/student`)
++
++- Form: school name, matriculation number, student ID upload
++- Submit → `kycService.verifyStudent(data)` → result display
++
++### KycReview (`/kyc/review`)
++
++- Read-only display of submitted KYC data across all methods
++- Verification status and any rejection reasons
++- "Edit" link back to respective method page if rejected
++
++### Notifications (`/notifications`)
++
++- Fetch via `notificationsService.list()`
++- Paginated list with infinite scroll or load-more
++- Each item: type icon (payment/tenancy/complaint/system), title, body preview, time ago, read/unread state
++- Click → mark as read via `notificationsService.markRead(id)` + navigate to relevant page if deep link
++- "Mark all read" button at top
++- Unread count badge
++
++## Out of Scope
++
++- Photo/file upload UI in complaints/KYC (backend endpoints exist, upload deferred — same as landlord batch)
++- Real-time notifications (polling only, matching existing patterns)
++- Chat/messaging between roommates (request-only, no ongoing chat)
++- Form validation library (plain inline checks, matching existing pattern)
++- New services or API endpoints (all exist)
++
++## Files
++
++| File | Action |
++|---|---|
++| `web/src/App.tsx` | Replace 15 Placeholder imports + routes with real components |
++| `web/src/pages/tenant/Apply.tsx` | Create |
++| `web/src/pages/tenant/TenancyDetail.tsx` | Create |
++| `web/src/pages/tenant/PayRent.tsx` | Create |
++| `web/src/pages/tenant/Receipt.tsx` | Create |
++| `web/src/pages/tenant/NewComplaint.tsx` | Create |
++| `web/src/pages/tenant/ComplaintDetail.tsx` | Create |
++| `web/src/pages/tenant/RoommatesList.tsx` | Create |
++| `web/src/pages/tenant/RoommateProfile.tsx` | Create |
++| `web/src/pages/tenant/RoommateRequests.tsx` | Create |
++| `web/src/pages/shared/KycOverview.tsx` | Create |
++| `web/src/pages/shared/KycBvn.tsx` | Create |
++| `web/src/pages/shared/KycNin.tsx` | Create |
++| `web/src/pages/shared/KycStudent.tsx` | Create |
++| `web/src/pages/shared/KycReview.tsx` | Create |
++| `web/src/pages/shared/Notifications.tsx` | Create |
+diff --git a/web/src/pages/tenant/Apply.tsx b/web/src/pages/tenant/Apply.tsx
+deleted file mode 100644
+index a4c7824..0000000
+--- a/web/src/pages/tenant/Apply.tsx
++++ /dev/null
+@@ -1,179 +0,0 @@
+-import { useEffect, useState } from 'react'
+-import { useParams, useNavigate } from 'react-router-dom'
+-import { ArrowLeft, MapPin, Info } from 'lucide-react'
+-import { tenanciesService } from '@/services/tenancies.service'
+-import { propertiesService, type Property } from '@/services/properties.service'
+-import { formatNGN } from '@/lib/utils'
+-import { ErrorState } from '@/components/custom/ErrorState'
+-
+-export default function ApplyScreen() {
+-  const { propertyId } = useParams<{ propertyId: string }>()
+-  const navigate = useNavigate()
+-  const [property, setProperty] = useState<Property | null>(null)
+-  const [loadingProp, setLoadingProp] = useState(true)
+-  const [propError, setPropError] = useState('')
+-  const [tenancyType, setTenancyType] = useState<'yearly' | 'monthly'>('yearly')
+-  const [moveInDate, setMoveInDate] = useState('')
+-  const [message, setMessage] = useState('')
+-  const [submitting, setSubmitting] = useState(false)
+-  const [submitError, setSubmitError] = useState('')
+-
+-  useEffect(() => {
+-    if (!propertyId) return
+-    setLoadingProp(true)
+-    propertiesService.getById(propertyId)
+-      .then(setProperty)
+-      .catch(() => setPropError('Could not load property details.'))
+-      .finally(() => setLoadingProp(false))
+-  }, [propertyId])
+-
+-  const handleSubmit = async () => {
+-    if (!moveInDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+-      setSubmitError('Enter move-in date in YYYY-MM-DD format.')
+-      return
+-    }
+-    setSubmitting(true)
+-    setSubmitError('')
+-    try {
+-      await tenanciesService.apply({
+-        property_id: propertyId,
+-        tenancy_type: tenancyType,
+-        move_in_date: moveInDate,
+-        message: message.trim() || undefined,
+-      })
+-      alert('Application sent! The landlord will review it and you\'ll be notified once a decision is made.')
+-      navigate('/tenancy')
+-    } catch (err) {
+-      setSubmitError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not submit application.')
+-    } finally {
+-      setSubmitting(false)
+-    }
+-  }
+-
+-  if (loadingProp) {
+-    return (
+-      <div className="p-6 max-w-2xl mx-auto space-y-4">
+-        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
+-        <div className="h-32 rounded-xl bg-muted animate-pulse" />
+-        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+-      </div>
+-    )
+-  }
+-
+-  if (propError) return <ErrorState message={propError} onRetry={() => navigate(0)} />
+-
+-  const p = property!
+-
+-  return (
+-    <div className="p-6 max-w-2xl mx-auto">
+-      {/* Header */}
+-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+-        <ArrowLeft className="w-4 h-4" /> Back
+-      </button>
+-      <h1 className="text-h2 text-foreground mb-6">Apply for Property</h1>
+-
+-      {/* Property summary */}
+-      <div className="rounded-xl border bg-card p-5 mb-6">
+-        <h2 className="font-semibold text-foreground">{p.title}</h2>
+-        <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+-          <MapPin className="w-3.5 h-3.5" /> {p.address}
+-        </p>
+-        <div className="flex gap-8 mt-3 text-sm">
+-          {p.yearly_rent != null && (
+-            <div>
+-              <p className="text-muted-foreground">Yearly</p>
+-              <p className="font-semibold text-primary">{formatNGN(Number(p.yearly_rent))}</p>
+-            </div>
+-          )}
+-          {p.monthly_rent != null && (
+-            <div>
+-              <p className="text-muted-foreground">Monthly</p>
+-              <p className="font-semibold text-primary">{formatNGN(Number(p.monthly_rent))}</p>
+-            </div>
+-          )}
+-        </div>
+-      </div>
+-
+-      {/* Tenancy type */}
+-      <div className="mb-6">
+-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Rent Payment Type</p>
+-        <div className="flex gap-3">
+-          {(['yearly', 'monthly'] as const).map((t) => (
+-            <button
+-              key={t}
+-              onClick={() => setTenancyType(t)}
+-              className={`px-5 py-2.5 rounded-xl border-2 text-sm font-medium transition-colors capitalize ${
+-                tenancyType === t
+-                  ? 'border-primary bg-primary/10 text-primary'
+-                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
+-              }`}
+-            >
+-              {t}
+-            </button>
+-          ))}
+-        </div>
+-        <p className="text-xs text-muted-foreground mt-2">
+-          {tenancyType === 'yearly'
+-            ? 'Yearly payment is common in Lagos — usually required upfront.'
+-            : 'Monthly payment if the landlord accepts it.'}
+-        </p>
+-      </div>
+-
+-      {/* Move-in date */}
+-      <div className="mb-6">
+-        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Preferred Move-in Date</label>
+-        <input
+-          type="text"
+-          value={moveInDate}
+-          onChange={(e) => setMoveInDate(e.target.value)}
+-          placeholder="YYYY-MM-DD  e.g. 2026-08-01"
+-          className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+-        />
+-      </div>
+-
+-      {/* Message */}
+-      <div className="mb-6">
+-        <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">
+-          Message to Landlord <span className="font-normal normal-case">(optional)</span>
+-        </label>
+-        <textarea
+-          value={message}
+-          onChange={(e) => setMessage(e.target.value)}
+-          placeholder="Introduce yourself — occupation, number of occupants, references..."
+-          rows={4}
+-          className="w-full px-4 py-3 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+-        />
+-      </div>
+-
+-      {/* Info */}
+-      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 mb-8">
+-        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+-        <p className="text-sm text-primary/80">
+-          The landlord will review your application and contact you. You'll get a notification once a decision is made.
+-        </p>
+-      </div>
+-
+-      {/* Error */}
+-      {submitError && (
+-        <p className="text-sm text-destructive mb-4 p-3 rounded-lg bg-destructive/10">{submitError}</p>
+-      )}
+-
+-      {/* Actions */}
+-      <div className="flex flex-col gap-3">
+-        <button
+-          onClick={handleSubmit}
+-          disabled={submitting}
+-          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
+-        >
+-          {submitting ? 'Submitting...' : 'Submit Application'}
+-        </button>
+-        <button
+-          onClick={() => navigate(-1)}
+-          className="w-full h-12 rounded-xl border text-sm font-medium hover:bg-muted transition-colors"
+-        >
+-          Cancel
+-        </button>
+-      </div>
+-    </div>
+-  )
+-}
+diff --git a/web/src/pages/tenant/ComplaintDetail.tsx b/web/src/pages/tenant/ComplaintDetail.tsx
+new file mode 100644
+index 0000000..ca20365
+--- /dev/null
++++ b/web/src/pages/tenant/ComplaintDetail.tsx
+@@ -0,0 +1,158 @@
++import { useCallback, useEffect, useState } from 'react'
++import { useParams, Link } from 'react-router-dom'
++import { ArrowLeft, Send, AlertTriangle, Clock, CheckCircle2, MessageSquare } from 'lucide-react'
++import { complaintsService, type Complaint, type ComplaintMessage } from '@/services/complaints.service'
++import { ErrorState } from '@/components/custom/ErrorState'
++import { timeAgo } from '@/lib/utils'
++
++const statusIcon = (status: string) => {
++  switch (status) {
++    case 'open': return <AlertTriangle className="w-4 h-4 text-amber-500" />
++    case 'in_progress': return <Clock className="w-4 h-4 text-blue-500" />
++    case 'resolved': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />
++    case 'escalated': return <AlertTriangle className="w-4 h-4 text-destructive" />
++    default: return <MessageSquare className="w-4 h-4 text-muted-foreground" />
++  }
++}
++
++const statusColor: Record<string, string> = {
++  open: 'text-amber-600 bg-amber-500/10',
++  in_progress: 'text-blue-600 bg-blue-500/10',
++  resolved: 'text-emerald-600 bg-emerald-500/10',
++  escalated: 'text-destructive bg-destructive/10',
++}
++
++export default function ComplaintDetailScreen() {
++  const { id } = useParams<{ id: string }>()
++  const [complaint, setComplaint] = useState<Complaint | null>(null)
++  const [messages, setMessages] = useState<ComplaintMessage[]>([])
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [reply, setReply] = useState('')
++  const [sending, setSending] = useState(false)
++  const [replyError, setReplyError] = useState('')
++
++  const load = useCallback(async () => {
++    if (!id) return
++    setLoading(true)
++    setError('')
++    try {
++      const [c, msgs] = await Promise.all([
++        complaintsService.getById(id),
++        complaintsService.getMessages(id),
++      ])
++      setComplaint(c)
++      setMessages(msgs)
++    } catch {
++      setError('Could not load complaint.')
++    } finally {
++      setLoading(false)
++    }
++  }, [id])
++
++  useEffect(() => { load() }, [load])
++
++  const handleReply = async () => {
++    if (!id || !reply.trim()) return
++    setSending(true)
++    setReplyError('')
++    try {
++      const msg = await complaintsService.addMessage(id, reply.trim())
++      setMessages((prev) => [...prev, msg])
++      setReply('')
++    } catch (err) {
++      setReplyError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not send reply.')
++    } finally {
++      setSending(false)
++    }
++  }
++
++  if (loading) {
++    return (
++      <div className="p-6 max-w-3xl mx-auto space-y-4">
++        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
++        <div className="h-32 rounded-xl bg-muted animate-pulse" />
++        <div className="h-48 rounded-xl bg-muted animate-pulse" />
++      </div>
++    )
++  }
++
++  if (error) return <ErrorState message={error} onRetry={load} />
++  if (!complaint) return <ErrorState message="Complaint not found." />
++
++  return (
++    <div className="p-6 max-w-3xl mx-auto">
++      <Link to="/complaints" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
++        <ArrowLeft className="w-4 h-4" /> Back to complaints
++      </Link>
++
++      <div className="rounded-xl border bg-card p-5 mb-6">
++        <div className="flex items-start justify-between gap-4 mb-3">
++          <h1 className="text-h4 font-semibold text-foreground">{complaint.title}</h1>
++          <span className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold capitalize ${statusColor[complaint.status] ?? 'bg-muted text-muted-foreground'}`}>
++            {statusIcon(complaint.status)}
++            {complaint.status.replace('_', ' ')}
++          </span>
++        </div>
++        <div className="flex items-center gap-4 text-xs text-muted-foreground">
++          <span className="px-2 py-0.5 rounded bg-muted capitalize">{complaint.category}</span>
++          <span className={`font-semibold capitalize ${
++            complaint.priority === 'high' ? 'text-destructive' : complaint.priority === 'medium' ? 'text-amber-500' : ''
++          }`}>{complaint.priority} priority</span>
++          <span>{timeAgo(complaint.created_at)}</span>
++        </div>
++      </div>
++
++      <div className="space-y-4 mb-6">
++        <div className="rounded-xl border bg-card p-4">
++          <div className="flex items-center gap-2 mb-2">
++            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
++              {complaint.creator?.first_name?.charAt(0) ?? 'Y'}
++            </div>
++            <span className="text-sm font-medium text-foreground">You</span>
++            <span className="text-xs text-muted-foreground">{timeAgo(complaint.created_at)}</span>
++          </div>
++          <p className="text-sm text-foreground whitespace-pre-wrap">{complaint.description}</p>
++        </div>
++
++        {messages.map((msg) => {
++          const isMe = msg.sender_id !== complaint.created_by
++          return (
++            <div key={msg.id} className={`rounded-xl border p-4 ${isMe ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
++              <div className="flex items-center gap-2 mb-2">
++                <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
++                  {msg.sender?.first_name?.charAt(0) ?? (isMe ? 'L' : '?')}
++                </div>
++                <span className="text-sm font-medium text-foreground">
++                  {msg.sender?.first_name ? `${msg.sender.first_name} ${msg.sender.last_name ?? ''}` : 'Landlord'}
++                </span>
++                <span className="text-xs text-muted-foreground">{timeAgo(msg.created_at)}</span>
++              </div>
++              <p className="text-sm text-foreground whitespace-pre-wrap">{msg.message}</p>
++            </div>
++          )
++        })}
++      </div>
++
++      {complaint.status !== 'resolved' ? (
++        <div className="rounded-xl border bg-card p-4">
++          {replyError && <p className="text-sm text-destructive mb-3 p-2 rounded-lg bg-destructive/10">{replyError}</p>}
++          <div className="flex gap-2">
++            <input
++              type="text" value={reply} onChange={(e) => setReply(e.target.value)}
++              onKeyDown={(e) => e.key === 'Enter' && handleReply()}
++              placeholder="Write a reply..."
++              className="flex-1 h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++            />
++            <button onClick={handleReply} disabled={sending || !reply.trim()}
++              className="shrink-0 flex items-center justify-center w-11 h-11 rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity">
++              <Send className="w-4 h-4" />
++            </button>
++          </div>
++        </div>
++      ) : (
++        <div className="text-center py-4 text-sm text-muted-foreground">This complaint has been resolved.</div>
++      )}
++    </div>
++  )
++}
+diff --git a/web/src/pages/tenant/NewComplaint.tsx b/web/src/pages/tenant/NewComplaint.tsx
+new file mode 100644
+index 0000000..162d6b0
+--- /dev/null
++++ b/web/src/pages/tenant/NewComplaint.tsx
+@@ -0,0 +1,105 @@
++import { useState } from 'react'
++import { useNavigate } from 'react-router-dom'
++import { ArrowLeft } from 'lucide-react'
++import { complaintsService } from '@/services/complaints.service'
++
++const CATEGORIES = ['maintenance', 'utilities', 'security', 'noise', 'other']
++const PRIORITIES = ['low', 'medium', 'high'] as const
++
++export default function NewComplaintScreen() {
++  const navigate = useNavigate()
++  const [title, setTitle] = useState('')
++  const [category, setCategory] = useState('maintenance')
++  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
++  const [description, setDescription] = useState('')
++  const [submitting, setSubmitting] = useState(false)
++  const [error, setError] = useState('')
++
++  const handleSubmit = async () => {
++    if (!title.trim()) { setError('Title is required.'); return }
++    if (!description.trim()) { setError('Description is required.'); return }
++    setSubmitting(true)
++    setError('')
++    try {
++      const result = await complaintsService.create({
++        title: title.trim(),
++        category,
++        priority,
++        description: description.trim(),
++      })
++      navigate(`/complaints/${result.id}`)
++    } catch (err) {
++      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not file complaint.')
++      setSubmitting(false)
++    }
++  }
++
++  return (
++    <div className="p-6 max-w-2xl mx-auto">
++      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
++        <ArrowLeft className="w-4 h-4" /> Back
++      </button>
++      <h1 className="text-h2 text-foreground mb-6">New Complaint</h1>
++
++      <div className="rounded-xl border bg-card p-6 space-y-5">
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Title</label>
++          <input
++            type="text" value={title} onChange={(e) => setTitle(e.target.value)}
++            placeholder="e.g. Leaking faucet in kitchen"
++            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
++          />
++        </div>
++
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Category</label>
++          <div className="flex flex-wrap gap-2">
++            {CATEGORIES.map((c) => (
++              <button key={c} onClick={() => setCategory(c)}
++                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
++                  category === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
++                }`}>
++                {c}
++              </button>
++            ))}
++          </div>
++        </div>
++
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Priority</label>
++          <div className="flex gap-2">
++            {PRIORITIES.map((p) => (
++              <button key={p} onClick={() => setPriority(p)}
++                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
++                  priority === p
++                    ? p === 'high' ? 'bg-destructive text-destructive-foreground'
++                    : p === 'medium' ? 'bg-amber-500 text-white'
++                    : 'bg-muted-foreground text-white'
++                    : 'bg-muted text-muted-foreground hover:text-foreground'
++                }`}>
++                {p}
++              </button>
++            ))}
++          </div>
++        </div>
++
++        <div>
++          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Description</label>
++          <textarea
++            value={description} onChange={(e) => setDescription(e.target.value)}
++            placeholder="Describe the issue in detail..."
++            rows={5}
++            className="w-full px-4 py-3 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
++          />
++        </div>
++
++        {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
++
++        <button onClick={handleSubmit} disabled={submitting}
++          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity">
++          {submitting ? 'Submitting...' : 'File Complaint'}
++        </button>
++      </div>
++    </div>
++  )
++}
+diff --git a/web/src/pages/tenant/PayRent.tsx b/web/src/pages/tenant/PayRent.tsx
+deleted file mode 100644
+index 927fadb..0000000
+--- a/web/src/pages/tenant/PayRent.tsx
++++ /dev/null
+@@ -1,74 +0,0 @@
+-import { useState } from 'react'
+-import { useNavigate } from 'react-router-dom'
+-import { ArrowLeft, CreditCard } from 'lucide-react'
+-import { paymentsService } from '@/services/payments.service'
+-import { formatNGN } from '@/lib/utils'
+-
+-export default function PayRentScreen() {
+-  const navigate = useNavigate()
+-  const [amount, setAmount] = useState('')
+-  const [tenancyId, setTenancyId] = useState('')
+-  const [submitting, setSubmitting] = useState(false)
+-  const [error, setError] = useState('')
+-
+-  const handleSubmit = async () => {
+-    const amt = Number(amount)
+-    if (!amt || amt <= 0) { setError('Enter a valid amount.'); return }
+-    if (!tenancyId.trim()) { setError('Tenancy ID is required.'); return }
+-    setSubmitting(true)
+-    setError('')
+-    try {
+-      const result = await paymentsService.initialize(tenancyId.trim(), amt)
+-      window.location.href = result.authorization_url
+-    } catch (err) {
+-      setError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Could not initiate payment.')
+-      setSubmitting(false)
+-    }
+-  }
+-
+-  return (
+-    <div className="p-6 max-w-xl mx-auto">
+-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+-        <ArrowLeft className="w-4 h-4" /> Back
+-      </button>
+-      <h1 className="text-h2 text-foreground mb-6">Pay Rent</h1>
+-
+-      <div className="rounded-xl border bg-card p-6 space-y-5">
+-        <div>
+-          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Tenancy ID</label>
+-          <input
+-            type="text" value={tenancyId} onChange={(e) => setTenancyId(e.target.value)}
+-            placeholder="e.g. a1b2c3d4-..."
+-            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+-          />
+-        </div>
+-        <div>
+-          <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Amount (₦)</label>
+-          <input
+-            type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+-            placeholder="e.g. 500000"
+-            min="1"
+-            className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+-          />
+-          {amount && !isNaN(Number(amount)) && (
+-            <p className="text-sm text-muted-foreground mt-2">{formatNGN(Number(amount))}</p>
+-          )}
+-        </div>
+-
+-        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+-          <CreditCard className="w-5 h-5 text-amber-600 shrink-0" />
+-          <p className="text-sm text-amber-700">You will be redirected to Paystack to complete your payment securely.</p>
+-        </div>
+-
+-        {error && <p className="text-sm text-destructive p-3 rounded-lg bg-destructive/10">{error}</p>}
+-
+-        <button
+-          onClick={handleSubmit} disabled={submitting}
+-          className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 transition-opacity"
+-        >
+-          {submitting ? 'Redirecting...' : 'Pay with Paystack'}
+-        </button>
+-      </div>
+-    </div>
+-  )
+-}
+diff --git a/web/src/pages/tenant/Receipt.tsx b/web/src/pages/tenant/Receipt.tsx
+deleted file mode 100644
+index e4e70df..0000000
+--- a/web/src/pages/tenant/Receipt.tsx
++++ /dev/null
+@@ -1,84 +0,0 @@
+-import { useEffect, useState } from 'react'
+-import { useLocation, useSearchParams, Link } from 'react-router-dom'
+-import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
+-import { paymentsService, type PaymentTransaction } from '@/services/payments.service'
+-import { formatNGN, formatDate } from '@/lib/utils'
+-import { ErrorState } from '@/components/custom/ErrorState'
+-
+-export default function ReceiptScreen() {
+-  const location = useLocation()
+-  const [searchParams] = useSearchParams()
+-  const [tx, setTx] = useState<PaymentTransaction | null>((location.state as any)?.transaction ?? null)
+-  const [loading, setLoading] = useState(!tx)
+-  const [error, setError] = useState('')
+-
+-  useEffect(() => {
+-    const txId = searchParams.get('id')
+-    if (tx || !txId) return
+-    setLoading(true)
+-    paymentsService.getTransaction(txId)
+-      .then(setTx)
+-      .catch(() => setError('Could not load receipt.'))
+-      .finally(() => setLoading(false))
+-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+-
+-  if (loading) {
+-    return (
+-      <div className="p-6 max-w-xl mx-auto">
+-        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+-      </div>
+-    )
+-  }
+-
+-  if (error || !tx) return <ErrorState message={error || 'Receipt not found.'} />
+-
+-  return (
+-    <div className="p-6 max-w-xl mx-auto">
+-      <div className="flex items-center justify-between mb-6">
+-        <Link to="/payments" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+-          <ArrowLeft className="w-4 h-4" /> Back to payments
+-        </Link>
+-        <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium hover:bg-muted">
+-          <Printer className="w-4 h-4" /> Print
+-        </button>
+-      </div>
+-
+-      <div className="rounded-2xl border bg-card p-8 text-center">
+-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+-          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+-        </div>
+-        <h2 className="text-lg font-bold text-foreground mb-1">Payment {tx.status === 'success' ? 'Successful' : tx.status}</h2>
+-        <p className="text-3xl font-extrabold text-primary mt-4">{formatNGN(tx.amount)}</p>
+-
+-        <div className="mt-8 space-y-3 text-sm">
+-          <div className="flex justify-between py-2 border-b">
+-            <span className="text-muted-foreground">Reference</span>
+-            <span className="font-mono font-medium text-foreground">{tx.reference}</span>
+-          </div>
+-          <div className="flex justify-between py-2 border-b">
+-            <span className="text-muted-foreground">Date</span>
+-            <span className="font-medium text-foreground">{formatDate(tx.paid_at ?? tx.created_at)}</span>
+-          </div>
+-          <div className="flex justify-between py-2 border-b">
+-            <span className="text-muted-foreground">Status</span>
+-            <span className={`font-semibold capitalize ${
+-              tx.status === 'success' ? 'text-emerald-600' : tx.status === 'pending' ? 'text-amber-600' : 'text-destructive'
+-            }`}>{tx.status}</span>
+-          </div>
+-          <div className="flex justify-between py-2 border-b">
+-            <span className="text-muted-foreground">Channel</span>
+-            <span className="font-medium text-foreground capitalize">{tx.channel || '—'}</span>
+-          </div>
+-          {tx.property?.title && (
+-            <div className="flex justify-between py-2 border-b">
+-              <span className="text-muted-foreground">Property</span>
+-              <span className="font-medium text-foreground">{tx.property.title}</span>
+-            </div>
+-          )}
+-        </div>
+-
+-        <p className="text-xs text-muted-foreground mt-8">AssetHub — Payment Receipt</p>
+-      </div>
+-    </div>
+-  )
+-}
+diff --git a/web/src/pages/tenant/TenancyDetail.tsx b/web/src/pages/tenant/TenancyDetail.tsx
+deleted file mode 100644
+index 969da1e..0000000
+--- a/web/src/pages/tenant/TenancyDetail.tsx
++++ /dev/null
+@@ -1,253 +0,0 @@
+-import { useCallback, useEffect, useState } from 'react'
+-import { useParams, Link, useNavigate } from 'react-router-dom'
+-import { ArrowLeft, Building2, CreditCard, Calendar, User, ShieldAlert, AlertTriangle } from 'lucide-react'
+-import { tenanciesService, type Tenancy } from '@/services/tenancies.service'
+-import { paymentsService, type PaymentTransaction } from '@/services/payments.service'
+-import { ErrorState } from '@/components/custom/ErrorState'
+-import { EmptyState } from '@/components/custom/EmptyState'
+-import { formatNGN, formatDate } from '@/lib/utils'
+-
+-export default function TenancyDetailScreen() {
+-  const { id } = useParams<{ id: string }>()
+-  const navigate = useNavigate()
+-  const [tenancy, setTenancy] = useState<Tenancy | null>(null)
+-  const [payments, setPayments] = useState<PaymentTransaction[]>([])
+-  const [loading, setLoading] = useState(true)
+-  const [error, setError] = useState('')
+-  const [terminating, setTerminating] = useState(false)
+-  const [terminateError, setTerminateError] = useState('')
+-  const [showTerminate, setShowTerminate] = useState(false)
+-
+-  const load = useCallback(async () => {
+-    if (!id) return
+-    setLoading(true)
+-    setError('')
+-    try {
+-      const [t, p] = await Promise.all([
+-        tenanciesService.getById(id),
+-        paymentsService.getHistory(),
+-      ])
+-      setTenancy(t)
+-      setPayments((p as PaymentTransaction[]).filter((tx) => tx.tenancy_id === id))
+-    } catch {
+-      setError('Could not load tenancy details.')
+-    } finally {
+-      setLoading(false)
+-    }
+-  }, [id])
+-
+-  useEffect(() => { load() }, [load])
+-
+-  const handleTerminate = async () => {
+-    if (!id) return
+-    setTerminating(true)
+-    setTerminateError('')
+-    try {
+-      await tenanciesService.terminate(id)
+-      navigate('/tenancy')
+-    } catch (err) {
+-      setTerminateError((err as any)?.response?.data?.message ?? (err as any)?.message ?? 'Failed to terminate tenancy.')
+-      setTerminating(false)
+-    }
+-  }
+-
+-  if (loading) {
+-    return (
+-      <div className="p-6 max-w-4xl mx-auto space-y-4">
+-        <div className="h-6 bg-muted rounded w-24 animate-pulse" />
+-        <div className="h-40 rounded-xl bg-muted animate-pulse" />
+-        <div className="h-40 rounded-xl bg-muted animate-pulse" />
+-      </div>
+-    )
+-  }
+-
+-  if (error) return <ErrorState message={error} onRetry={load} />
+-  if (!tenancy) return <ErrorState message="Tenancy not found." />
+-
+-  const statusColor: Record<string, string> = {
+-    active: 'text-emerald-600 bg-emerald-500/10',
+-    pending: 'text-amber-600 bg-amber-500/10',
+-    terminated: 'text-muted-foreground bg-muted',
+-    declined: 'text-destructive bg-destructive/10',
+-  }
+-
+-  return (
+-    <div className="p-6 max-w-4xl mx-auto">
+-      {/* Header */}
+-      <div className="flex items-center justify-between mb-6">
+-        <div>
+-          <Link to="/tenancy" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
+-            <ArrowLeft className="w-4 h-4" /> Back to tenancy
+-          </Link>
+-          <h1 className="text-h2 text-foreground">Tenancy Details</h1>
+-        </div>
+-        {tenancy.status === 'active' && (
+-          <button
+-            onClick={() => setShowTerminate(true)}
+-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-destructive/30 text-destructive text-sm font-medium hover:bg-destructive/5"
+-          >
+-            <ShieldAlert className="w-4 h-4" /> Terminate
+-          </button>
+-        )}
+-      </div>
+-
+-      {/* Status badge */}
+-      <div className="mb-6">
+-        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-semibold capitalize ${statusColor[tenancy.status] ?? 'bg-muted text-muted-foreground'}`}>
+-          {tenancy.status}
+-        </span>
+-      </div>
+-
+-      {/* Info cards */}
+-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+-        {/* Property card */}
+-        <div className="rounded-xl border bg-card p-5">
+-          <div className="flex items-center gap-2 mb-4">
+-            <Building2 className="w-4 h-4 text-muted-foreground" />
+-            <h3 className="text-sm font-semibold text-foreground">Property</h3>
+-          </div>
+-          {tenancy.property ? (
+-            <div>
+-              <p className="font-semibold text-foreground">{tenancy.property.title}</p>
+-              <p className="text-sm text-muted-foreground">{tenancy.property.address}</p>
+-            </div>
+-          ) : (
+-            <p className="text-sm text-muted-foreground">—</p>
+-          )}
+-        </div>
+-
+-        {/* Landlord card - Note: tenant object on tenancy has the tenant info, landlord is the landlord_id.
+-            For tenant view, we show landlord info if available, otherwise show placeholder.
+-            The tenancy type has tenant object, but landlord contact comes from property owner */}
+-        <div className="rounded-xl border bg-card p-5">
+-          <div className="flex items-center gap-2 mb-4">
+-            <User className="w-4 h-4 text-muted-foreground" />
+-            <h3 className="text-sm font-semibold text-foreground">Landlord</h3>
+-          </div>
+-          <p className="text-sm text-muted-foreground">
+-            Contact your landlord through the property listing or use the complaints system for urgent issues.
+-          </p>
+-        </div>
+-      </div>
+-
+-      {/* Rent & dates */}
+-      <div className="rounded-xl border bg-card p-5 mb-8">
+-        <div className="flex items-center gap-2 mb-4">
+-          <CreditCard className="w-4 h-4 text-muted-foreground" />
+-          <h3 className="text-sm font-semibold text-foreground">Rent & Dates</h3>
+-        </div>
+-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+-          <div>
+-            <p className="text-muted-foreground">Rent Amount</p>
+-            <p className="font-semibold">{formatNGN(tenancy.rent_amount)}</p>
+-          </div>
+-          <div>
+-            <p className="text-muted-foreground">Type</p>
+-            <p className="font-semibold capitalize">{tenancy.tenancy_type}</p>
+-          </div>
+-          {tenancy.caution_fee != null && (
+-            <div>
+-              <p className="text-muted-foreground">Caution Fee</p>
+-              <p className="font-semibold">{formatNGN(tenancy.caution_fee)}</p>
+-            </div>
+-          )}
+-          {tenancy.agency_fee != null && (
+-            <div>
+-              <p className="text-muted-foreground">Agency Fee</p>
+-              <p className="font-semibold">{formatNGN(tenancy.agency_fee)}</p>
+-            </div>
+-          )}
+-        </div>
+-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t text-sm">
+-          <div>
+-            <p className="text-muted-foreground">Start Date</p>
+-            <p className="font-semibold">{tenancy.start_date ? formatDate(tenancy.start_date) : '—'}</p>
+-          </div>
+-          <div>
+-            <p className="text-muted-foreground">End Date</p>
+-            <p className="font-semibold">{tenancy.end_date ? formatDate(tenancy.end_date) : '—'}</p>
+-          </div>
+-        </div>
+-      </div>
+-
+-      {/* Agreement status */}
+-      <div className="rounded-xl border bg-card p-5 mb-8">
+-        <div className="flex items-center gap-2 mb-4">
+-          <Calendar className="w-4 h-4 text-muted-foreground" />
+-          <h3 className="text-sm font-semibold text-foreground">Agreement</h3>
+-        </div>
+-        <div className="grid grid-cols-2 gap-4 text-sm">
+-          <div className="flex items-center gap-2">
+-            <div className={`w-2.5 h-2.5 rounded-full ${tenancy.tenant_signed ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+-            <span>Tenant {tenancy.tenant_signed ? 'signed ✓' : 'not signed'}</span>
+-          </div>
+-          <div className="flex items-center gap-2">
+-            <div className={`w-2.5 h-2.5 rounded-full ${tenancy.landlord_signed ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`} />
+-            <span>Landlord {tenancy.landlord_signed ? 'signed ✓' : 'not signed'}</span>
+-          </div>
+-        </div>
+-      </div>
+-
+-      {/* Payment history */}
+-      <div className="rounded-xl border bg-card p-5 mb-8">
+-        <h3 className="text-sm font-semibold text-foreground mb-4">Payment History</h3>
+-        {payments.length === 0 ? (
+-          <EmptyState title="No payments recorded" description="Payments made for this tenancy will appear here." />
+-        ) : (
+-          <div className="space-y-2">
+-            {payments.map((tx) => (
+-              <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0 text-sm">
+-                <div>
+-                  <p className="font-medium text-foreground">{formatNGN(tx.amount)}</p>
+-                  <p className="text-muted-foreground text-xs">{tx.reference?.slice(0, 16)}... • {formatDate(tx.paid_at ?? tx.created_at)}</p>
+-                </div>
+-                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${
+-                  tx.status === 'success' ? 'text-emerald-600 bg-emerald-500/10' :
+-                  tx.status === 'pending' ? 'text-amber-600 bg-amber-500/10' :
+-                  'text-destructive bg-destructive/10'
+-                }`}>{tx.status}</span>
+-              </div>
+-            ))}
+-          </div>
+-        )}
+-      </div>
+-
+-      {/* Created */}
+-      <div className="text-xs text-muted-foreground">
+-        Created {formatDate(tenancy.created_at)}
+-      </div>
+-
+-      {/* Terminate modal */}
+-      {showTerminate && (
+-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+-          <div className="rounded-2xl bg-card border p-6 max-w-sm w-full mx-4 shadow-2xl">
+-            <div className="flex items-center gap-3 mb-4">
+-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+-                <AlertTriangle className="w-5 h-5 text-destructive" />
+-              </div>
+-              <div>
+-                <h3 className="font-semibold text-foreground">Terminate Tenancy</h3>
+-                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+-              </div>
+-            </div>
+-            <p className="text-sm text-muted-foreground mb-6">
+-              Are you sure you want to terminate this tenancy? The landlord will be notified.
+-            </p>
+-            {terminateError && (
+-              <p className="text-sm text-destructive mb-4 p-2 rounded-lg bg-destructive/10">{terminateError}</p>
+-            )}
+-            <div className="flex gap-2 justify-end">
+-              <button onClick={() => setShowTerminate(false)} className="px-4 py-2 rounded-xl border text-sm font-medium hover:bg-muted">
+-                Cancel
+-              </button>
+-              <button onClick={handleTerminate} disabled={terminating}
+-                className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 disabled:opacity-60">
+-                {terminating ? 'Terminating...' : 'Terminate'}
+-              </button>
+-            </div>
+-          </div>
+-        </div>
+-      )}
+-    </div>
+-  )
+-}
