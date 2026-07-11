@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Users, Send } from 'lucide-react'
-import { roommatesService, type RoommateRequest } from '@/services/roommates.service'
+import { roommatesService } from '@/services/roommates.service'
+import type { RoommateRequest } from '@/types/roommate'
 import { EmptyState } from '@/components/custom/EmptyState'
 import { ErrorState } from '@/components/custom/ErrorState'
 

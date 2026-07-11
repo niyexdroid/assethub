@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Info, CheckCircle2 } from 'lucide-react'
 import { tenanciesService } from '@/services/tenancies.service'
 import { propertiesService, type Property } from '@/services/properties.service'
@@ -7,6 +7,7 @@ import { formatNGN } from '@/lib/utils'
 import { ErrorState } from '@/components/custom/ErrorState'
 
 export default function ApplyScreen() {
+  const navigate = useNavigate()
   const { propertyId } = useParams<{ propertyId: string }>()
   const [property, setProperty] = useState<Property | null>(null)
   const [loadingProp, setLoadingProp] = useState(true)

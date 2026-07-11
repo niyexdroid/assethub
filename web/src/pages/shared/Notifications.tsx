@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CreditCard, Building2, MessageSquare, Bell, CheckCheck } from 'lucide-react'
-import { notificationsService, type AppNotification } from '@/services/notifications.service'
+import { notificationsService } from '@/services/notifications.service'
+import type { AppNotification } from '@/types/notification'
 import { EmptyState } from '@/components/custom/EmptyState'
 import { ErrorState } from '@/components/custom/ErrorState'
 import { timeAgo } from '@/lib/utils'
