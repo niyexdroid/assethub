@@ -21,7 +21,7 @@ const schema = z.object({
   FIREBASE_PRIVATE_KEY:  z.string(),
   // Plunk HTTP API (primary — works on Railway free/hobby tiers)
   PLUNK_API_KEY:         z.string(),
-  PLUNK_API_URL:         z.string().default('https://api.useplunk.com'),
+  PLUNK_API_URL:         z.string().default('https://next-api.useplunk.com'),
   MAIL_FROM_EMAIL:       z.string().email(),
   // Gmail SMTP (fallback / local dev only — blocked on Railway)
   GMAIL_USER:            z.string().email().optional(),
