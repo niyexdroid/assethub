@@ -60,7 +60,7 @@ function createHttpTransport(): Transporter {
           throw new Error(`Email API returned ${response.status}${body ? ': ' + body : ''}`);
         }
 
-        const result = await response.json().catch(() => ({}));
+        const result: Record<string, any> = await response.json().catch(() => ({})) as Record<string, any>;
         done(null, {
           messageId: result.id || result.messageId || result.message_id || '',
           envelope,
