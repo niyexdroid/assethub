@@ -20,6 +20,10 @@ import userRoutes  from './modules/users/users.routes';
 
 const app = express();
 
+// Trust Railway's reverse proxy so rate-limit and other middleware
+// correctly read the client IP from X-Forwarded-For.
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginOpenerPolicy: false,
