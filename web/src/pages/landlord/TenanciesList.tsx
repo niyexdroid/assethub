@@ -138,7 +138,7 @@ export default function TenanciesList() {
                       {t.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-medium">{formatNGN(t.rent_amount)}</td>
+                  <td className="px-4 py-3 text-right font-medium">{formatNGN(t.yearly_amount ?? t.monthly_amount)}</td>
                   <td className="px-4 py-3 text-right text-muted-foreground">
                     {t.start_date ? formatDate(t.start_date) : '—'}
                   </td>

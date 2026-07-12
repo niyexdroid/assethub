@@ -171,7 +171,7 @@ export default function DashboardScreen() {
                         'bg-muted text-muted-foreground'
                       }`}>{t.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">{formatNGN(t.rent_amount)}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatNGN(t.yearly_amount ?? t.monthly_amount)}</td>
                   </tr>
                 ))}
               </tbody>

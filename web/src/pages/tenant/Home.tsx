@@ -181,7 +181,7 @@ export default function HomeScreen() {
                     {p.title}
                   </h3>
                   <span className="shrink-0 text-lg font-extrabold text-primary">
-                    {formatNGN(p.rent_amount)}
+                    {formatNGN(p.yearly_rent ?? p.monthly_rent)}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{p.address}</p>

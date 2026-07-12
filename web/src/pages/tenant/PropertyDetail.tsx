@@ -101,7 +101,7 @@ export default function PropertyDetailScreen() {
               </p>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-h2 font-extrabold text-primary">{formatNGN(property.rent_amount)}</div>
+              <div className="text-h2 font-extrabold text-primary">{formatNGN(property.yearly_rent ?? property.monthly_rent)}</div>
               <div className="text-xs text-muted-foreground">per year</div>
             </div>
           </div>

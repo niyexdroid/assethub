@@ -137,7 +137,7 @@ export default function MyListings() {
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t">
                   <span className="text-lg font-bold text-foreground">
-                    {formatNGN(Number(p.rent_amount) || 0)}<span className="text-xs font-normal text-muted-foreground">/yr</span>
+                    {formatNGN(p.yearly_rent ?? p.monthly_rent)}<span className="text-xs font-normal text-muted-foreground">/yr</span>
                   </span>
                   <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                 </div>

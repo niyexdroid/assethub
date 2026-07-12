@@ -121,7 +121,7 @@ function TenancyCard({ tenancy }: { tenancy: T }) {
         </div>
         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
           <span className="capitalize">{tenancy.status}</span>
-          <span>{formatNGN(tenancy.rent_amount)}/yr</span>
+          <span>{formatNGN(tenancy.yearly_amount ?? tenancy.monthly_amount)}/yr</span>
           {tenancy.start_date && <span>Since {formatDate(tenancy.start_date)}</span>}
         </div>
       </div>
