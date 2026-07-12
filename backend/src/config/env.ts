@@ -19,7 +19,9 @@ const schema = z.object({
   FIREBASE_PROJECT_ID:   z.string(),
   FIREBASE_CLIENT_EMAIL: z.string(),
   FIREBASE_PRIVATE_KEY:  z.string(),
-  MAIL_API_URL:          z.string().url(),
+  // Email: Resend (primary) or generic HTTP API / Plunk (fallback)
+  RESEND_API_KEY:         z.string().optional().default(''),
+  MAIL_API_URL:           z.string().url().optional().default(''),
   MAIL_API_KEY:           z.string().optional().default(''),
   MAIL_FROM_EMAIL:        z.string().email(),
   MAIL_FROM_NAME:         z.string().default('AssetHub'),
