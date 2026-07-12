@@ -20,7 +20,7 @@ export const transporter = nodemailer.createTransport({
       to:      mail.data.to,
       subject: mail.data.subject,
       body:    mail.data.html || mail.data.text || '',
-      from:    `${FROM_NAME} <${FROM_EMAIL}>`,
+      from:    { name: FROM_NAME, email: FROM_EMAIL },
     };
 
     fetch(`${env.PLUNK_API_URL}/v1/send`, {
