@@ -5,9 +5,8 @@ export interface Property {
   lga: string
   property_type: string
   listing_type?: 'standard' | 'student'
-  rent_amount: number
-  monthly_rent?: number
-  yearly_rent?: number
+  monthly_rent?: number | string
+  yearly_rent?: number | string
   caution_fee?: number
   agency_fee?: number
   bedrooms?: number

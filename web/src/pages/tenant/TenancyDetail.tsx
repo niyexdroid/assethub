@@ -139,7 +139,7 @@ export default function TenancyDetailScreen() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Rent Amount</p>
-            <p className="font-semibold">{formatNGN(tenancy.rent_amount)}</p>
+            <p className="font-semibold">{formatNGN(tenancy.yearly_amount ?? tenancy.monthly_amount)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Type</p>

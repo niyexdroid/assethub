@@ -87,7 +87,7 @@ export default function ListingDetail() {
       bathrooms: property.bathrooms != null ? String(property.bathrooms) : '',
       tenancy_mode: property.tenancy_mode ?? 'yearly',
       monthly_rent: property.monthly_rent ? String(property.monthly_rent) : '',
-      yearly_rent: property.yearly_rent ? String(property.yearly_rent) : property.rent_amount ? String(property.rent_amount) : '',
+      yearly_rent: property.yearly_rent ? String(property.yearly_rent) : '',
       caution_fee: property.caution_fee != null ? String(property.caution_fee) : '',
       agency_fee: property.agency_fee != null ? String(property.agency_fee) : '',
       available_units: property.available_units != null ? String(property.available_units) : '1',
@@ -181,7 +181,7 @@ export default function ListingDetail() {
           <span className="text-sm">{property.lga}{property.address ? `, ${property.address}` : ''}</span>
         </div>
         <p className="text-h2 text-foreground mt-4">
-          {formatNGN(Number(property.rent_amount) || 0)}<span className="text-base font-normal text-muted-foreground">/year</span>
+          {formatNGN(property.yearly_rent ?? property.monthly_rent)}<span className="text-base font-normal text-muted-foreground">/year</span>
         </p>
       </div>
 

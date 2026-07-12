@@ -9,7 +9,8 @@ export interface Tenancy {
   tenancy_type: 'monthly' | 'yearly'
   start_date?: string
   end_date?: string
-  rent_amount: number
+  monthly_amount?: number | string
+  yearly_amount?: number | string
   caution_fee?: number
   agency_fee?: number
   tenant_signed: boolean

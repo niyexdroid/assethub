@@ -6,14 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // ── Currency ──────────────────────────────────────
-export function formatNGN(amount: number): string {
-  return '₦' + Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+export function formatNGN(amount: number | string | null | undefined): string {
+  const n = Number(amount ?? 0)
+  if (!Number.isFinite(n)) return '₦0'
+  return '₦' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
-export function formatNGNCompact(amount: number): string {
-  if (amount >= 1_000_000) return '₦' + (amount / 1_000_000).toFixed(1) + 'M'
-  if (amount >= 1_000) return '₦' + (amount / 1_000).toFixed(0) + 'k'
-  return formatNGN(amount)
+export function formatNGNCompact(amount: number | string | null | undefined): string {
+  const n = Number(amount ?? 0)
+  if (!Number.isFinite(n)) return '₦0'
+  if (n >= 1_000_000) return '₦' + (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return '₦' + (n / 1_000).toFixed(0) + 'k'
+  return formatNGN(n)
 }
 
 // ── Dates ─────────────────────────────────────────
