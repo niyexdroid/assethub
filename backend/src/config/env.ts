@@ -19,8 +19,13 @@ const schema = z.object({
   FIREBASE_PROJECT_ID:   z.string(),
   FIREBASE_CLIENT_EMAIL: z.string(),
   FIREBASE_PRIVATE_KEY:  z.string(),
-  GMAIL_USER:            z.string().email(),
-  GMAIL_APP_PASSWORD:    z.string(),
+  // Plunk HTTP API (primary — works on Railway free/hobby tiers)
+  PLUNK_API_KEY:         z.string(),
+  PLUNK_API_URL:         z.string().default('https://api.useplunk.com'),
+  MAIL_FROM_EMAIL:       z.string().email(),
+  // Gmail SMTP (fallback / local dev only — blocked on Railway)
+  GMAIL_USER:            z.string().email().optional(),
+  GMAIL_APP_PASSWORD:    z.string().optional(),
   IMAGEKIT_PUBLIC_KEY:    z.string(),
   IMAGEKIT_PRIVATE_KEY:   z.string(),
   IMAGEKIT_URL_ENDPOINT:  z.string(),
