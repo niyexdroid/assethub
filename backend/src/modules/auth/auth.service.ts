@@ -45,7 +45,9 @@ export class AuthService {
       'SELECT id FROM users WHERE email = $1', [input.email]
     );
     if (newUser[0]) {
-      notificationsService.sendOtp(newUser[0].id, input.email, otp).catch(() => {});
+      notificationsService.sendOtp(newUser[0].id, input.email, otp).catch((err) => {
+        console.error('[auth] Failed to send verification OTP:', err.message ?? err);
+      });
     }
 
     return { email: input.email };
@@ -78,7 +80,9 @@ export class AuthService {
     if (rows[0].is_verified) throw Object.assign(new Error('Email already verified'), { status: 400 });
 
     const otp = await generateOtp(email);
-    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
+    notificationsService.sendOtp(rows[0].id, email, otp).catch((err) => {
+      console.error('[auth] Failed to resend verification OTP:', err.message ?? err);
+    });
     return { message: 'Verification code resent.' as const };
   }
 
@@ -107,7 +111,9 @@ export class AuthService {
     );
 
     // Fire-and-forget — don't block the response waiting for notification delivery
-    notificationsService.sendOtp(user.id, user.email, otp).catch(() => {});
+    notificationsService.sendOtp(user.id, user.email, otp).catch((err) => {
+      console.error('[auth] Failed to send login OTP:', err.message ?? err);
+    });
 
     // OTP is never returned to client — sent only via notification channel
     return { requiresOtp: true as const, login_token };
@@ -351,7 +357,9 @@ export class AuthService {
       return { message: 'If that email is registered, a reset code has been sent.' as const };
     }
     const otp = await generateOtp(email);
-    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
+    notificationsService.sendOtp(rows[0].id, email, otp).catch((err) => {
+      console.error('[auth] Failed to send password reset OTP:', err.message ?? err);
+    });
     return { message: 'If that email is registered, a reset code has been sent.' as const };
   }
 
