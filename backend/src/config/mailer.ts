@@ -15,7 +15,12 @@ function parseToList(
   addresses: string | string[],
 ): Array<{ name: string; email: string }> {
   const list = Array.isArray(addresses) ? addresses : [addresses];
-  return list.map((addr) => parseFrom(addr));
+  return list.map((addr) => {
+    const parsed = parseFrom(addr);
+    // Brevo requires a non-empty name — default to the email local part
+    if (!parsed.name) parsed.name = parsed.email.split('@')[0] ?? parsed.email;
+    return parsed;
+  });
 }
 
 /**
