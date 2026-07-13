@@ -3,15 +3,110 @@ import type { Transporter } from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from './env';
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function parseFrom(from: string): { name: string; email: string } {
+  const match = from.match(/^"?([^"]*)"?\s*<\s*(\S+?@\S+?)\s*>$/);
+  if (match) return { name: match[1].trim() || '', email: match[2].trim() };
+  return { name: '', email: from };
+}
+
+function parseToList(
+  addresses: string | string[],
+): Array<{ name: string; email: string }> {
+  const list = Array.isArray(addresses) ? addresses : [addresses];
+  return list.map((addr) => parseFrom(addr));
+}
+
 /**
- * Resend transport (primary).
+ * Brevo transport (primary).
  *
- * Resend has a generous free tier (100 emails/day) and works on Railway
- * without SMTP restrictions. Uses the official resend SDK.
+ * Brevo (formerly Sendinblue) has a 300 emails/day free tier and only
+ * requires individual sender email verification — no domain needed.
  *
- * For testing:     from "AssetHub <onboarding@resend.dev>"
- * For production:  verify your domain at https://resend.com/domains and
- *                  update MAIL_FROM_EMAIL accordingly.
+ * Setup:
+ *   1. Sign up at https://brevo.com
+ *   2. Get API key from SMTP & API → API Keys
+ *   3. Verify propmanager.admin@gmail.com as a sender
+ *   4. Set BREVO_API_KEY in env
+ *
+ * API docs: https://developers.brevo.com/reference/sendtransacemail
+ */
+
+function createBrevoTransport(): Transporter {
+  return nodemailer.createTransport({
+    name: 'brevo',
+    version: '1.0.0',
+
+    async send(mail: any, done: (err: Error | null, info?: any) => void) {
+      const envelope = mail.data.envelope || mail.message.getEnvelope();
+      const data = mail.data;
+
+      try {
+        const payload: Record<string, unknown> = {
+          sender:       parseFrom(data.from),
+          to:           parseToList(envelope.to),
+          subject:      data.subject,
+        };
+
+        if (data.html)  payload.htmlContent  = data.html;
+        if (data.text)  payload.textContent  = data.text;
+        if (data.replyTo) {
+          payload.replyTo = parseFrom(
+            typeof data.replyTo === 'string' ? data.replyTo : data.replyTo,
+          );
+        }
+
+        if (envelope.cc  && envelope.cc.length  > 0) {
+          payload.cc = parseToList(envelope.cc);
+        }
+        if (envelope.bcc && envelope.bcc.length > 0) {
+          payload.bcc = parseToList(envelope.bcc);
+        }
+
+        if (data.attachments && data.attachments.length > 0) {
+          payload.attachment = data.attachments.map((att: any) => ({
+            name:    att.filename ?? 'attachment',
+            content: Buffer.isBuffer(att.content)
+              ? att.content.toString('base64')
+              : att.content,
+          }));
+        }
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key':      env.BREVO_API_KEY,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const body = await response.text().catch(() => '');
+          throw new Error(`Brevo API ${response.status}${body ? ': ' + body : ''}`);
+        }
+
+        const result: Record<string, any> = await response.json().catch(() => ({})) as Record<string, any>;
+        done(null, {
+          messageId: result.messageId ?? `brevo-${Date.now()}`,
+          envelope,
+          accepted:  envelope.to,
+          rejected:  [],
+          response:  JSON.stringify(result),
+        });
+      } catch (err: any) {
+        done(err);
+      }
+    },
+  } as any);
+}
+
+/**
+ * Resend transport (secondary fallback).
+ *
+ * Free tier: 100 emails/day. Works on Railway without SMTP.
+ * Requires domain verification to send beyond test mode.
  */
 
 function createResendTransport(): Transporter {
@@ -38,11 +133,10 @@ function createResendTransport(): Transporter {
         if (envelope.bcc && envelope.bcc.length > 0) payload.bcc = envelope.bcc;
         if (data.replyTo) payload.reply_to = data.replyTo;
 
-        // Map nodemailer attachments to Resend format
         if (data.attachments && data.attachments.length > 0) {
           payload.attachments = data.attachments.map((att: any) => ({
             filename: att.filename,
-            content:  att.content,   // Buffer or base64 string — Resend accepts both
+            content:  att.content,
           }));
         }
 
@@ -68,15 +162,10 @@ function createResendTransport(): Transporter {
 
 /**
  * Generic HTTP transport — Plunk, Posta, Hyvor Relay, Wildduck, etc.
- * Used when RESEND_API_KEY is not configured.
  *
  * Configure via env:
  *   MAIL_API_URL    — full send endpoint
  *   MAIL_API_KEY    — Bearer token
- *
- * Plunk example:
- *   MAIL_API_URL=https://next-api.useplunk.com/v1/send
- *   MAIL_API_KEY=sk_...
  */
 
 function createHttpTransport(): Transporter {
@@ -138,15 +227,18 @@ function createHttpTransport(): Transporter {
 }
 
 // ── Auto-select ─────────────────────────────────────────────────────────────────
-// Resend (RESEND_API_KEY set) → Resend transport
-// Generic HTTP (MAIL_API_URL set) → HTTP transport (Plunk, etc.)
-// Neither → Resend transport (will fail fast with a clear error)
+// Brevo     → createBrevoTransport()
+// Resend    → createResendTransport()
+// HTTP/Plunk → createHttpTransport()
+// Fallback  → Brevo (throws a clear "no API key" error on first send)
 
-export const transporter: Transporter = env.RESEND_API_KEY
-  ? createResendTransport()
-  : env.MAIL_API_URL
-    ? createHttpTransport()
-    : createResendTransport();   // no API key → Resend will throw on first send
+export const transporter: Transporter = env.BREVO_API_KEY
+  ? createBrevoTransport()
+  : env.RESEND_API_KEY
+    ? createResendTransport()
+    : env.MAIL_API_URL
+      ? createHttpTransport()
+      : createBrevoTransport();
 
 export const FROM_EMAIL = env.MAIL_FROM_EMAIL;
 export const FROM_NAME  = env.MAIL_FROM_NAME;
