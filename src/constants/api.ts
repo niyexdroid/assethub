@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 const getApiUrl = (): string => {
-  if (!__DEV__) return 'https://api.niyexdroid.com';
+  if (!__DEV__) return 'https://assethub.niyexdroidtechnologies.com';
 
   // Allow manual override via .env (e.g. for tunnels or emulators)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
