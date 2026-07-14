@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
-import { Badge } from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { tenanciesService } from '../../../services/tenancies.service';
 import { paymentsService, PaymentScheduleItem } from '../../../services/payments.service';
@@ -14,11 +11,11 @@ import { formatNGN } from '../../../utils/format';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-const STATUS_CONFIG: Record<string, { variant: 'danger' | 'warning' | 'success'; label: string; icon: IoniconsName; iconColor: string }> = {
-  overdue:         { variant: 'danger',  label: 'Overdue', icon: 'alert-circle-outline',     iconColor: '#FF6B6B' },
-  pending:         { variant: 'warning', label: 'Due',     icon: 'time-outline',             iconColor: '#FFA040' },
-  paid:            { variant: 'success', label: 'Paid',    icon: 'checkmark-circle-outline',  iconColor: '#4ADE80' },
-  partially_paid:  { variant: 'warning', label: 'Partial', icon: 'ellipse-outline',           iconColor: '#FFA040' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string; icon: IoniconsName }> = {
+  overdue:         { color: '#FF6B6B', bg: 'rgba(230,57,70,0.12)',   label: 'Overdue', icon: 'alert-circle-outline' },
+  pending:         { color: '#FFA040', bg: 'rgba(244,168,37,0.12)',   label: 'Due',     icon: 'time-outline' },
+  paid:            { color: '#4ADE80', bg: 'rgba(29,219,160,0.12)',   label: 'Paid',    icon: 'checkmark-circle-outline' },
+  partially_paid:  { color: '#FFA040', bg: 'rgba(244,168,37,0.12)',   label: 'Partial', icon: 'ellipse-outline' },
 };
 
 function fmtDate(d: string) {
@@ -39,7 +36,7 @@ export default function PaymentsScreen() {
     setError('');
     try {
       const tenancies = await tenanciesService.getTenantTenancies();
-      const active    = tenancies.find(t => t.status === 'active');
+      const active    = Array.isArray(tenancies) ? tenancies.find((t: any) => t.status === 'active') : undefined;
       if (active) {
         setTenancyId(active.id);
         const items = await paymentsService.getSchedule(active.id);
@@ -47,8 +44,8 @@ export default function PaymentsScreen() {
       } else {
         setSchedule([]);
       }
-    } catch {
-      setError('Could not load payment schedule.');
+    } catch (e: any) {
+      setError(e?.message || 'Could not load payment schedule.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -60,7 +57,7 @@ export default function PaymentsScreen() {
   const overdue  = schedule.filter(s => s.status === 'overdue');
   const pending  = schedule.filter(s => s.status === 'pending');
   const paid     = schedule.filter(s => s.status === 'paid');
-  const totalOwed = [...overdue, ...pending].reduce((sum, p) => sum + p.amount, 0);
+  const totalOwed = [...overdue, ...pending].reduce((sum, p) => sum + (p.amount || 0), 0);
 
   return (
     <ScrollView
@@ -69,29 +66,27 @@ export default function PaymentsScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.primary} />}
     >
-      {/* Balance Banner */}
-      <Animated.View entering={FadeInDown.delay(0).springify()}>
-        <LinearGradient colors={theme.primaryGrad} style={styles.banner}>
-          <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)' }]}>Total Outstanding</Text>
-          <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{formatNGN(totalOwed)}</Text>
-          <View style={styles.bannerRow}>
-            <View style={styles.bannerStat}>
-              <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Overdue</Text>
-              <Text style={[typography.bodyMed, { color: '#FF6B6B' }]}>{overdue.length}</Text>
-            </View>
-            <View style={styles.bannerDivider} />
-            <View style={styles.bannerStat}>
-              <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Upcoming</Text>
-              <Text style={[typography.bodyMed, { color: '#fff' }]}>{pending.length}</Text>
-            </View>
-            <View style={styles.bannerDivider} />
-            <View style={styles.bannerStat}>
-              <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Paid</Text>
-              <Text style={[typography.bodyMed, { color: '#4ADE80' }]}>{paid.length}</Text>
-            </View>
+      {/* Balance Banner — plain View, no LinearGradient */}
+      <View style={[styles.banner, { backgroundColor: theme.primary }]}>
+        <Text style={[typography.small, { color: 'rgba(255,255,255,0.75)' }]}>Total Outstanding</Text>
+        <Text style={[typography.price, { color: '#fff', marginTop: 4 }]}>{formatNGN(totalOwed)}</Text>
+        <View style={styles.bannerRow}>
+          <View style={styles.bannerStat}>
+            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Overdue</Text>
+            <Text style={[typography.bodyMed, { color: '#FF6B6B' }]}>{overdue.length}</Text>
           </View>
-        </LinearGradient>
-      </Animated.View>
+          <View style={styles.bannerDivider} />
+          <View style={styles.bannerStat}>
+            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Upcoming</Text>
+            <Text style={[typography.bodyMed, { color: '#fff' }]}>{pending.length}</Text>
+          </View>
+          <View style={styles.bannerDivider} />
+          <View style={styles.bannerStat}>
+            <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Paid</Text>
+            <Text style={[typography.bodyMed, { color: '#4ADE80' }]}>{paid.length}</Text>
+          </View>
+        </View>
+      </View>
 
       {loading ? (
         <ActivityIndicator color={theme.primary} style={{ marginTop: 40 }} />
@@ -111,7 +106,7 @@ export default function PaymentsScreen() {
       ) : (
         <>
           {overdue.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.section}>
+            <View style={styles.section}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <Ionicons name="alert-circle" size={14} color={theme.danger} />
                 <Text style={[typography.label, { color: theme.danger }]}>OVERDUE PAYMENTS</Text>
@@ -119,25 +114,25 @@ export default function PaymentsScreen() {
               {overdue.map(item => (
                 <PaymentRow key={item.id} item={item} tenancyId={tenancyId!} theme={theme} />
               ))}
-            </Animated.View>
+            </View>
           )}
 
           {pending.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(140).springify()} style={styles.section}>
+            <View style={styles.section}>
               <Text style={[typography.label, { color: theme.textMuted, marginBottom: 10 }]}>UPCOMING PAYMENTS</Text>
               {pending.map(item => (
                 <PaymentRow key={item.id} item={item} tenancyId={tenancyId!} theme={theme} />
               ))}
-            </Animated.View>
+            </View>
           )}
 
           {paid.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.section}>
+            <View style={styles.section}>
               <Text style={[typography.label, { color: theme.textMuted, marginBottom: 10 }]}>PAYMENT HISTORY</Text>
               {paid.map(item => (
                 <PaymentRow key={item.id} item={item} tenancyId={tenancyId!} theme={theme} />
               ))}
-            </Animated.View>
+            </View>
           )}
         </>
       )}
@@ -159,7 +154,7 @@ function PaymentRow({ item, tenancyId, theme }: { item: PaymentScheduleItem; ten
       style={({ pressed }) => [styles.row, { backgroundColor: theme.surface, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
     >
       <View style={[styles.rowIcon, { backgroundColor: theme.background }]}>
-        <Ionicons name={cfg.icon} size={22} color={cfg.iconColor} />
+        <Ionicons name={cfg.icon} size={22} color={cfg.color} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{label}</Text>
@@ -171,7 +166,10 @@ function PaymentRow({ item, tenancyId, theme }: { item: PaymentScheduleItem; ten
         <Text style={[typography.bodyMed, { color: isPaid ? theme.success : theme.textPrimary }]}>
           {formatNGN(item.amount)}
         </Text>
-        <Badge label={cfg.label} variant={cfg.variant} />
+        {/* Inline badge — no Badge component */}
+        <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
+          <Text style={[typography.caption, { color: cfg.color, fontWeight: '600' }]}>{cfg.label}</Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -187,4 +185,5 @@ const styles = StyleSheet.create({
   empty:         { alignItems: 'center', paddingTop: 40, paddingHorizontal: 40 },
   row:           { flexDirection: 'row', alignItems: 'center', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14, marginBottom: 10 },
   rowIcon:       { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  badge:         { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
 });
