@@ -12,8 +12,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://backend-production-aec4.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "426756347604-gccac5hcusrt71kpdqk6jfet5o4ja10u.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "426756347604-bcu0v0pb5n53gv1s61l5h10g2ic6sqj4.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "483016814862-dpjubucl63g7hf59065cksj4rotvame8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "483016814862-cqp1i5bvip8ht0r1s9dged2s745esdei.apps.googleusercontent.com"
       },
       "channel": "development"
     },
@@ -24,8 +24,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://backend-production-aec4.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "426756347604-gccac5hcusrt71kpdqk6jfet5o4ja10u.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "426756347604-bcu0v0pb5n53gv1s61l5h10g2ic6sqj4.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "483016814862-dpjubucl63g7hf59065cksj4rotvame8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "483016814862-cqp1i5bvip8ht0r1s9dged2s745esdei.apps.googleusercontent.com"
       },
       "channel": "preview"
     },
@@ -35,8 +35,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://assethub.niyexdroidtechnologies.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "426756347604-gccac5hcusrt71kpdqk6jfet5o4ja10u.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "426756347604-bcu0v0pb5n53gv1s61l5h10g2ic6sqj4.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "483016814862-dpjubucl63g7hf59065cksj4rotvame8.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "483016814862-cqp1i5bvip8ht0r1s9dged2s745esdei.apps.googleusercontent.com"
       },
       "channel": "production"
     }
