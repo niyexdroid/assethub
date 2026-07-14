@@ -10,6 +10,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { typography } from '../../../constants/typography';
 import { tenanciesService } from '../../../services/tenancies.service';
 import { paymentsService, PaymentScheduleItem } from '../../../services/payments.service';
+import { formatNGN } from '../../../utils/format';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
