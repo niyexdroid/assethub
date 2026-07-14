@@ -39,6 +39,7 @@ export default function RegisterScreen() {
     setGoogleLoading(true);
     try {
       await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signOut(); // clear any stale cached session
       const { data } = await GoogleSignin.signIn();
       const idToken = data?.idToken;
       if (!idToken) throw new Error('No ID token returned');
