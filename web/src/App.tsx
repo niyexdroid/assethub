@@ -48,10 +48,10 @@ import CreateListing from '@/pages/landlord/CreateListing'
 import ListingDetail from '@/pages/landlord/ListingDetail'
 import TenanciesList from '@/pages/landlord/TenanciesList'
 import TenancyDetail from '@/pages/landlord/TenancyDetail'
+import Payments from '@/pages/landlord/Payments'
+import Complaints from '@/pages/landlord/Complaints'
+import ComplaintDetail from '@/pages/landlord/ComplaintDetail'
 import Settings from '@/pages/Settings'
-
-// Placeholder for pages not yet built
-import { Placeholder } from '@/pages/Placeholder'
 
 export function App() {
   return (
@@ -108,9 +108,9 @@ export function App() {
                 <Route path="/landlord/listings/:id" element={<ListingDetail />} />
                 <Route path="/landlord/tenancies" element={<TenanciesList />} />
                 <Route path="/landlord/tenancies/:id" element={<TenancyDetail />} />
-                <Route path="/landlord/payments" element={<Placeholder title="Payments" />} />
-                <Route path="/landlord/complaints" element={<Placeholder title="Complaints" />} />
-                <Route path="/landlord/complaints/:id" element={<Placeholder title="Complaint Detail" />} />
+                <Route path="/landlord/payments" element={<Payments />} />
+                <Route path="/landlord/complaints" element={<Complaints />} />
+                <Route path="/landlord/complaints/:id" element={<ComplaintDetail />} />
                 <Route path="/notifications" element={<NotificationsScreen />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/kyc" element={<KycOverviewScreen />} />
