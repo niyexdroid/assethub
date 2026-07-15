@@ -338,7 +338,7 @@ const properties = [
 
 async function seed() {
   const landlordResult = await pool.query(
-    `SELECT id FROM users WHERE phone_number = '+2348100000002' AND role = 'landlord' LIMIT 1`
+    `SELECT id FROM users WHERE email = 'niyexdroid@outlook.com' AND role = 'landlord' LIMIT 1`
   );
 
   if (landlordResult.rows.length === 0) {

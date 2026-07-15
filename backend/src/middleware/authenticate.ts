@@ -19,7 +19,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
     // Lightweight check — confirm user still exists and is active
     const { rows } = await pool.query(
-      'SELECT id, role, package_type FROM users WHERE id = $1 AND is_active = true',
+      'SELECT id, email, role, package_type FROM users WHERE id = $1 AND is_active = true',
       [payload.sub]
     );
     if (!rows[0]) return res.status(401).json({ error: 'User not found or deactivated' });

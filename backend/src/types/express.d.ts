@@ -3,6 +3,7 @@ declare global {
     interface Request {
       user?: {
         id:           string;
+        email:        string;
         role:         'landlord' | 'tenant' | 'admin';
         package_type: 'standard' | 'student';
       };

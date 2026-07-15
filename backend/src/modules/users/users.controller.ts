@@ -2,8 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { UsersService } from './users.service';
 import { updateProfileSchema, changePasswordSchema, changePhoneRequestSchema, changePhoneVerifySchema } from './users.validators';
 import { uploadFile } from '../../services/upload.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const svc = new UsersService();
+const notifSvc = new NotificationsService();
 
 export async function getMe(req: Request, res: Response, next: NextFunction) {
   try {
@@ -31,8 +33,10 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
 export async function requestPhoneChange(req: Request, res: Response, next: NextFunction) {
   try {
     const input = changePhoneRequestSchema.parse(req.body);
-    await svc.requestPhoneChange(req.user!.id, input);
-    res.json({ message: 'OTP sent to new phone number' });
+    const { otp, phone } = await svc.requestPhoneChange(req.user!.id, input);
+    // Send OTP to user's email for verification (phone change is sensitive)
+    await notifSvc.sendOtp(req.user!.id, req.user!.email, otp);
+    res.json({ message: 'OTP sent to your email. Use it to verify your new phone number.' });
   } catch (err) { next(err); }
 }
 

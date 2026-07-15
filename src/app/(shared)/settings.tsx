@@ -251,7 +251,7 @@ export default function SettingsScreen() {
         <Section label="ACCOUNT" delay={160}>
           <Row icon="lock-closed-outline"      label="Change Password"  onPress={() => setShowPassword(true)} />
           <Row icon="mail-outline"             label="Update Email"     value={user?.email || 'Not set'} onPress={() => setShowEmail(true)} />
-          <Row icon="shield-checkmark-outline" label="KYC Verification" value={user?.is_verified ? 'Verified' : 'Not verified'} onPress={() => router.push('/(onboarding)/index')} />
+          <Row icon="shield-checkmark-outline" label="KYC Verification" value={user?.is_verified ? 'Verified' : 'Not verified'} onPress={() => router.push('/(onboarding)/kyc-bvn')} />
         </Section>
 
         <Section label="SUPPORT" delay={220}>

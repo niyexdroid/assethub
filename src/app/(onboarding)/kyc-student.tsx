@@ -15,6 +15,7 @@ import { typography } from '../../constants/typography';
 import { kycService } from '../../services/kyc.service';
 
 const schema = z.object({
+  school_name: z.string().min(2, 'Enter your school or institution name'),
   school_email: z.string().email('Enter a valid school email').refine(
     v => v.endsWith('.edu.ng') || v.endsWith('.edu') || v.endsWith('.ac.uk'),
     'Must be an institutional email (e.g. .edu.ng)'
@@ -49,7 +50,7 @@ export default function KycStudentScreen() {
     if (!idImage) { setImageError('Please upload your student ID card'); return; }
     setLoading(true);
     try {
-      await kycService.submitStudentId(idImage, data.matric_number, data.school_email);
+      await kycService.submitStudentId(idImage, data.school_name, data.school_email, data.matric_number);
       router.push('/(onboarding)/kyc-review');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message ?? 'Could not submit student ID.');
@@ -119,6 +120,22 @@ export default function KycStudentScreen() {
 
         {/* Form */}
         <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.form}>
+          <Controller
+            control={control}
+            name="school_name"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                label="School / Institution Name"
+                placeholder="e.g. University of Lagos"
+                value={value}
+                onChangeText={onChange}
+                autoCapitalize="words"
+                error={errors.school_name?.message}
+                leftIcon={<Text style={{ fontSize: 16 }}>🏫</Text>}
+              />
+            )}
+          />
+
           <Controller
             control={control}
             name="school_email"

@@ -70,7 +70,7 @@ export default function Complaints() {
               {list.map((c: any) => (
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900">{c.subject}</p>
+                    <p className="font-medium text-gray-900">{c.title}</p>
                     <p className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString()}</p>
                   </td>
                   <td className="px-6 py-4 text-gray-600 text-xs">{c.property_title}</td>

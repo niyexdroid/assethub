@@ -10,7 +10,7 @@ export const kycService = {
     await api.post(API_ENDPOINTS.kyc.nin, { nin });
   },
 
-  submitStudentId: async (imageUri: string, schoolName: string, schoolEmail?: string): Promise<void> => {
+  submitStudentId: async (imageUri: string, schoolName: string, schoolEmail?: string, matricNumber?: string): Promise<void> => {
     const form = new FormData();
     const filename = imageUri.split('/').pop() ?? 'student-id.jpg';
     const match    = /\.(\w+)$/.exec(filename);
@@ -18,6 +18,7 @@ export const kycService = {
     form.append('file', { uri: imageUri, name: filename, type } as any);
     form.append('school_name', schoolName);
     if (schoolEmail) form.append('school_email', schoolEmail);
+    if (matricNumber) form.append('matric_number', matricNumber);
     await api.post(API_ENDPOINTS.kyc.student, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
