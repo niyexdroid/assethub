@@ -171,10 +171,10 @@ export default function DashboardScreen() {
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>
-                    {t.tenant ? `${t.tenant.first_name} ${t.tenant.last_name}` : 'Tenant'}
+                    {t.tenant_first_name ? `${t.tenant_first_name} ${t.tenant_last_name}` : 'Tenant'}
                   </Text>
                   <Text style={[typography.caption, { color: theme.textMuted }]}>
-                    {t.property?.title ?? t.property_id}
+                    {t.property_title ?? t.property_id}
                   </Text>
                 </View>
                 <Badge

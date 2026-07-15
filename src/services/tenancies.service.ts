@@ -9,25 +9,22 @@ export interface Tenancy {
   status: 'pending' | 'active' | 'terminated' | 'declined';
   start_date: string;
   end_date: string;
-  monthly_rent: number;
-  caution_fee: number;
-  agency_fee: number;
-  tenancy_mode: string;
+  monthly_amount: number | null;
+  yearly_amount?: number | null;
+  caution_fee_paid: number;
+  agency_fee_paid: number;
+  tenancy_type: string;
   tenant_signed_at: string | null;
   landlord_signed_at: string | null;
   termination_reason: string | null;
-  property?: {
-    title: string;
-    address: string;
-    lga: string;
-    photos: string[];
-  };
-  tenant?: {
-    first_name: string;
-    last_name: string;
-    phone_number: string;
-    email: string;
-  };
+  // Flat fields from JOINs (varies by endpoint)
+  property_title?: string;
+  property_address?: string;
+  address?: string;
+  photos?: string[];
+  tenant_first_name?: string;
+  tenant_last_name?: string;
+  tenant_phone?: string;
   created_at: string;
 }
 
@@ -52,10 +49,11 @@ export const tenanciesService = {
     tenant_id: string;
     start_date: string;
     end_date: string;
-    monthly_rent: number;
-    caution_fee?: number;
-    agency_fee?: number;
-    tenancy_mode?: string;
+    monthly_amount?: number;
+    yearly_amount?: number;
+    caution_fee_paid?: number;
+    agency_fee_paid?: number;
+    tenancy_type: string;
   }): Promise<Tenancy> => {
     const res = await api.post(API_ENDPOINTS.tenancies.create, data);
     return res.data;

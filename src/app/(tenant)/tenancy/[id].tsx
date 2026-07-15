@@ -144,10 +144,10 @@ export default function TenantTenancyDetailScreen() {
           <Ionicons name="home-outline" size={18} color={theme.textMuted} />
           <Text style={[typography.label, { color: theme.textMuted }]}>PROPERTY</Text>
         </View>
-        {tenancy.property ? (
+        {tenancy.property_title ? (
           <View style={{ marginTop: 8 }}>
-            <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{tenancy.property.title}</Text>
-            <Text style={[typography.small, { color: theme.textMuted, marginTop: 2 }]}>{tenancy.property.address}</Text>
+            <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{tenancy.property_title}</Text>
+            <Text style={[typography.small, { color: theme.textMuted, marginTop: 2 }]}>{tenancy.property_address ?? tenancy.address}</Text>
           </View>
         ) : (
           <Text style={[typography.small, { color: theme.textMuted, marginTop: 8 }]}>—</Text>
@@ -174,24 +174,24 @@ export default function TenantTenancyDetailScreen() {
         <View style={styles.grid}>
           <View style={styles.gridItem}>
             <Text style={[typography.caption, { color: theme.textMuted }]}>Rent Amount</Text>
-            <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.monthly_rent)}/mo</Text>
+            <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.monthly_amount ?? tenancy.yearly_amount ?? 0)}/mo</Text>
           </View>
           <View style={styles.gridItem}>
             <Text style={[typography.caption, { color: theme.textMuted }]}>Type</Text>
             <Text style={[typography.bodyMed, { color: theme.textPrimary, textTransform: 'capitalize' }]}>
-              {tenancy.tenancy_mode || '—'}
+              {tenancy.tenancy_type || '—'}
             </Text>
           </View>
-          {tenancy.caution_fee != null && (
+          {tenancy.caution_fee_paid != null && (
             <View style={styles.gridItem}>
               <Text style={[typography.caption, { color: theme.textMuted }]}>Caution Fee</Text>
-              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.caution_fee)}</Text>
+              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.caution_fee_paid)}</Text>
             </View>
           )}
-          {tenancy.agency_fee != null && (
+          {tenancy.agency_fee_paid != null && (
             <View style={styles.gridItem}>
               <Text style={[typography.caption, { color: theme.textMuted }]}>Agency Fee</Text>
-              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.agency_fee)}</Text>
+              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{formatNGN(tenancy.agency_fee_paid)}</Text>
             </View>
           )}
         </View>

@@ -96,13 +96,13 @@ export default function TenanciesScreen() {
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>
-                        {t.tenant ? `${t.tenant.first_name} ${t.tenant.last_name}` : 'Tenant'}
+                        {t.tenant_first_name ? `${t.tenant_first_name} ${t.tenant_last_name}` : 'Tenant'}
                       </Text>
                       <Text style={[typography.caption, { color: theme.textMuted, marginTop: 2 }]}>
-                        {t.property?.title ?? t.property_id}
+                        {t.property_title ?? t.property_id}
                       </Text>
                       <Text style={[typography.small, { color: theme.primaryLight, fontWeight: '600', marginTop: 2 }]}>
-                        {formatNGN((t.monthly_rent ?? t.yearly_amount ?? t.monthly_amount ?? 0))}/mo
+                        {formatNGN((t.monthly_amount ?? t.yearly_amount ?? 0))}/mo
                       </Text>
                     </View>
                     <Badge label={t.status} variant={statusVariant} dot />

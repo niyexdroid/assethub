@@ -100,7 +100,7 @@ export default function TenancyScreen() {
                   >
                     <View style={styles.cardRow}>
                       <Text style={[typography.bodyMed, { color: '#fff' }]} numberOfLines={1}>
-                        {activeTenancy.property?.title ?? 'Property'}
+                        {activeTenancy.property_title ?? 'Property'}
                       </Text>
                       <View style={styles.statusBadge}>
                         <Ionicons name="checkmark-circle" size={14} color="#fff" />
@@ -108,13 +108,13 @@ export default function TenancyScreen() {
                       </View>
                     </View>
                     <Text style={[typography.caption, { color: 'rgba(255,255,255,0.75)', marginTop: 4 }]}>
-                      {activeTenancy.property?.address}
+                      {activeTenancy.property_address ?? activeTenancy.address}
                     </Text>
                     <View style={[styles.cardDivider, { borderColor: 'rgba(255,255,255,0.2)' }]} />
                     <View style={styles.cardRow}>
                       <View>
                         <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Monthly Rent</Text>
-                        <Text style={[typography.h3, { color: '#fff' }]}>{formatNaira(activeTenancy.monthly_rent)}</Text>
+                        <Text style={[typography.h3, { color: '#fff' }]}>{formatNaira(activeTenancy.monthly_amount ?? activeTenancy.yearly_amount ?? 0)}</Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
                         <Text style={[typography.caption, { color: 'rgba(255,255,255,0.7)' }]}>Lease ends</Text>
@@ -188,16 +188,16 @@ function TenancyRow({ tenancy, theme, formatDate, formatNaira, onPress, onAccept
     <Pressable onPress={onPress} style={[styles.row, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <View style={styles.cardRow}>
         <Text style={[typography.bodyMed, { color: theme.textPrimary, flex: 1 }]} numberOfLines={1}>
-          {tenancy.property?.title ?? 'Property'}
+          {tenancy.property_title ?? 'Property'}
         </Text>
         <View style={[styles.statusPill, { backgroundColor: color + '18' }]}>
           <Ionicons name={icon as any} size={12} color={color} />
           <Text style={[typography.small, { color, marginLeft: 4, textTransform: 'capitalize' }]}>{tenancy.status}</Text>
         </View>
       </View>
-      <Text style={[typography.caption, { color: theme.textMuted, marginTop: 2 }]}>{tenancy.property?.address}</Text>
+      <Text style={[typography.caption, { color: theme.textMuted, marginTop: 2 }]}>{tenancy.property_address ?? tenancy.address}</Text>
       <Text style={[typography.caption, { color: theme.textMuted, marginTop: 4 }]}>
-        {formatDate(tenancy.start_date)} — {formatDate(tenancy.end_date)} · {formatNaira(tenancy.monthly_rent)}/mo
+        {formatDate(tenancy.start_date)} — {formatDate(tenancy.end_date)} · {formatNaira(tenancy.monthly_amount ?? tenancy.yearly_amount ?? 0)}/mo
       </Text>
       {tenancy.status === 'pending' && onAccept && (
         <View style={styles.actionRow}>
