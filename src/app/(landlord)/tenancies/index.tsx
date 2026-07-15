@@ -86,7 +86,10 @@ export default function TenanciesScreen() {
             const statusVariant = t.status === 'active' ? 'success' : t.status === 'pending' ? 'warning' : 'info';
             return (
               <Animated.View key={t.id} entering={FadeInDown.delay(100 + i * 50).springify()}>
-                <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Pressable
+                  onPress={() => router.push({ pathname: '/(landlord)/tenancies/[id]' as any, params: { id: t.id } })}
+                  style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
                   <View style={styles.cardTop}>
                     <View style={[styles.avatar, { backgroundColor: theme.surfaceRaised }]}>
                       <Ionicons name="person-outline" size={22} color={theme.textSecondary} />
@@ -119,7 +122,7 @@ export default function TenanciesScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               </Animated.View>
             );
           })}
