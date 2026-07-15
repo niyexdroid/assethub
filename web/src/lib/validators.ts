@@ -3,7 +3,6 @@ import { z } from 'zod'
 // ── Auth ──────────────────────────────────────────
 export const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
 export const loginOtpSchema = z.object({
@@ -11,28 +10,11 @@ export const loginOtpSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits'),
 })
 
-export const registerSchema = z.object({
+export const completeProfileSchema = z.object({
   first_name: z.string().min(2, 'First name is required'),
   last_name: z.string().min(2, 'Last name is required'),
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['tenant', 'landlord']),
-  package: z.enum(['standard', 'student']).optional(),
-})
-
-export const verifyEmailSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6, 'OTP must be 6 digits'),
-})
-
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-})
-
-export const resetPasswordSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6, 'OTP must be 6 digits'),
-  new_password: z.string().min(6, 'Password must be at least 6 characters'),
+  package_type: z.enum(['standard', 'student']).optional(),
 })
 
 // ── Property ──────────────────────────────────────

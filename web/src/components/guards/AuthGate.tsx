@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
 
-const AUTH_PAGES = ['/login', '/register', '/verify-email', '/verify-login-otp',
-  '/forgot-password', '/reset-password', '/google-complete']
+const AUTH_PAGES = ['/login', '/register', '/complete-profile', '/google-complete']
 
 export function AuthGate() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
