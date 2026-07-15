@@ -19,8 +19,29 @@ interface Template {
   emailHtml:    string;
 }
 
+/** Escape HTML entities in user-supplied strings to prevent injection. */
+function esc(s?: string): string {
+  if (!s) return '';
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function getTemplate(type: NotificationType, vars: TemplateVars): Template {
-  const v = vars;
+  // Sanitize all user-supplied values before interpolation
+  const v: TemplateVars = {
+    name:      esc(vars.name),
+    amount:    esc(vars.amount),
+    property:  esc(vars.property),
+    daysUntilDue: vars.daysUntilDue,
+    dueDate:   esc(vars.dueDate),
+    reference: esc(vars.reference),
+    otp:       esc(vars.otp),
+    reason:    esc(vars.reason),
+  };
 
   const templates: Record<NotificationType, Template> = {
     otp: {

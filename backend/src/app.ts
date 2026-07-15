@@ -34,20 +34,23 @@ app.use(express.json());
 // Global rate limiter
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
-// Stricter rate limiter for auth endpoints
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+// Stricter rate limiters for sensitive endpoints
+const authLimiter      = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+const kycLimiter       = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+const paymentLimiter   = rateLimit({ windowMs: 15 * 60 * 1000, max: 30 });
+const complaintLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/v1/auth',       authLimiter, authRoutes);
-app.use('/api/v1/kyc',        kycRoutes);
-app.use('/api/v1/payments',      paymentRoutes);
-app.use('/api/v1/paystack',      subaccountRoutes);
+app.use('/api/v1/kyc',        kycLimiter, kycRoutes);
+app.use('/api/v1/payments',      paymentLimiter, paymentRoutes);
+app.use('/api/v1/paystack',      paymentLimiter, subaccountRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/properties',   propertyRoutes);
 app.use('/api/v1/tenancies',    tenancyRoutes);
 app.use('/api/v1/roommates',    roommateRoutes);
-app.use('/api/v1/complaints',   complaintRoutes);
+app.use('/api/v1/complaints',   complaintLimiter, complaintRoutes);
 app.use('/api/v1/admin',        adminRoutes);
 app.use('/api/v1/users',        userRoutes);
 

@@ -152,6 +152,20 @@ export class ComplaintsService {
   }
 
   async resolve(complaintId: string, resolverId: string, resolutionNotes: string) {
+    // Verify resolver is a party to the complaint or an admin
+    const { rows: authRows } = await pool.query(
+      `SELECT c.raised_by, c.against, u.role
+       FROM complaints c
+       JOIN users u ON u.id = $2
+       WHERE c.id = $1`,
+      [complaintId, resolverId]
+    );
+    if (!authRows[0]) throw Object.assign(new Error('Complaint not found'), { status: 404 });
+    const { raised_by, against, role } = authRows[0];
+    if (resolverId !== raised_by && resolverId !== against && role !== 'admin') {
+      throw Object.assign(new Error('Not authorised to resolve this complaint'), { status: 403 });
+    }
+
     const { rows } = await pool.query(
       `UPDATE complaints
        SET status = 'resolved', resolved_by = $1,

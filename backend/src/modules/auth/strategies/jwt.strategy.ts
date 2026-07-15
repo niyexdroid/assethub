@@ -25,11 +25,11 @@ export function signRefreshToken(
 }
 
 export function verifyAccessToken(token: string): AuthTokenPayload {
-  return jwt.verify(token, env.JWT_ACCESS_SECRET) as AuthTokenPayload;
+  return jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: ['HS256'] }) as AuthTokenPayload;
 }
 
 export function verifyRefreshToken(token: string): AuthTokenPayload {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as AuthTokenPayload;
+  return jwt.verify(token, env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as AuthTokenPayload;
 }
 
 /** TTL in seconds — how long to keep a blocklisted access token in Redis. */

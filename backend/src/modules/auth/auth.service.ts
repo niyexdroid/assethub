@@ -203,6 +203,11 @@ export class AuthService {
       throw Object.assign(new Error('Invalid or expired refresh token'), { status: 401 });
     }
 
+    // Defense-in-depth: ensure this is actually a refresh token, not an access token
+    if (payload.type !== 'refresh') {
+      throw Object.assign(new Error('Invalid token type'), { status: 401 });
+    }
+
     const family = payload.family;
     const jti = payload.jti;
     const userId = payload.sub;
