@@ -83,6 +83,12 @@ export default function VerifyLoginOtpScreen() {
     setLoading(true);
     try {
       const response = await authService.verifyLoginOtp(login_token, code);
+
+      if (response.isNewUser) {
+        router.push({ pathname: '/(auth)/complete-profile', params: { profile_token: response.profile_token, email } });
+        return;
+      }
+
       await setAuth(response.user, response.tokens);
 
       // Prompt biometrics setup on first-time login if not already enabled

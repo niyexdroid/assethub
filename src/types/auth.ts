@@ -26,12 +26,23 @@ export interface AuthResponse {
 
 export interface LoginRequest {
   email: string;
-  password: string;
 }
 
 export interface LoginOtpResponse {
   requiresOtp: true;
   login_token: string;
+}
+
+export type VerifyLoginOtpResponse =
+  | { isNewUser: true; profile_token: string; user?: undefined; tokens?: undefined }
+  | { isNewUser?: undefined; user: User; tokens: AuthTokens; profile_token?: undefined };
+
+export interface CompleteProfileRequest {
+  profile_token: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  package_type?: TenantPackage;
 }
 
 export interface GoogleProfile {
@@ -45,12 +56,3 @@ export interface GoogleProfile {
 export type GoogleAuthResponse =
   | { isNewUser: false; user: User; tokens: AuthTokens }
   | { isNewUser: true;  profile: GoogleProfile };
-
-export interface RegisterRequest {
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  package?: TenantPackage;
-}

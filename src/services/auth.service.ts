@@ -1,6 +1,6 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '../constants/api';
-import { AuthResponse, AuthTokens, GoogleAuthResponse, GoogleProfile, LoginRequest, LoginOtpResponse, RegisterRequest } from '../types/auth';
+import { AuthResponse, AuthTokens, CompleteProfileRequest, GoogleAuthResponse, GoogleProfile, LoginRequest, LoginOtpResponse, VerifyLoginOtpResponse } from '../types/auth';
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginOtpResponse> => {
@@ -8,13 +8,18 @@ export const authService = {
     return res.data;
   },
 
-  verifyLoginOtp: async (login_token: string, otp: string): Promise<AuthResponse> => {
-    const res = await api.post<AuthResponse>(API_ENDPOINTS.auth.verifyLoginOtp, { login_token, otp });
+  verifyLoginOtp: async (login_token: string, otp: string): Promise<VerifyLoginOtpResponse> => {
+    const res = await api.post<VerifyLoginOtpResponse>(API_ENDPOINTS.auth.verifyLoginOtp, { login_token, otp });
     return res.data;
   },
 
   resendLoginOtp: async (login_token: string): Promise<void> => {
     await api.post(API_ENDPOINTS.auth.resendLoginOtp, { login_token });
+  },
+
+  completeProfile: async (data: CompleteProfileRequest): Promise<AuthResponse> => {
+    const res = await api.post<AuthResponse>(API_ENDPOINTS.auth.completeProfile, data);
+    return res.data;
   },
 
   googleAuth: async (idToken: string): Promise<GoogleAuthResponse> => {
@@ -27,31 +32,9 @@ export const authService = {
     return res.data;
   },
 
-  register: async (data: RegisterRequest): Promise<{ email: string }> => {
-    const res = await api.post<{ email: string }>(API_ENDPOINTS.auth.register, data);
-    return res.data;
-  },
-
-  verifyEmail: async (email: string, otp: string): Promise<AuthResponse> => {
-    const res = await api.post<AuthResponse>(API_ENDPOINTS.auth.verifyEmail, { email, otp });
-    return res.data;
-  },
-
-  resendVerification: async (email: string): Promise<void> => {
-    await api.post(API_ENDPOINTS.auth.resendVerification, { email });
-  },
-
   refresh: async (refresh_token: string): Promise<AuthTokens> => {
     const res = await api.post<AuthTokens>(API_ENDPOINTS.auth.refresh, { refresh_token });
     return res.data;
-  },
-
-  forgotPassword: async (email: string): Promise<void> => {
-    await api.post(API_ENDPOINTS.auth.forgotPassword, { email });
-  },
-
-  resetPassword: async (data: { email: string; otp: string; new_password: string }): Promise<void> => {
-    await api.post(API_ENDPOINTS.auth.resetPassword, data);
   },
 
   logout: async (refreshToken?: string): Promise<void> => {

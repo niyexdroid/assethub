@@ -28,7 +28,6 @@ export default function LoginScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { setAuth, biometricsEnabled } = useAuthStore();
-  const [showPass, setShowPass]       = useState(false);
   const [loading, setLoading]         = useState(false);
   const [bioLoading, setBioLoading]   = useState(false);
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -82,7 +81,7 @@ export default function LoginScreen() {
         SecureStore.getItemAsync('user'),
       ]);
       if (!refreshToken || !userJson) {
-        Alert.alert('Session expired', 'Please sign in with your email and password.');
+        Alert.alert('Session expired', 'Please sign in with your email again.');
         return;
       }
 
@@ -106,29 +105,21 @@ export default function LoginScreen() {
         params: { login_token, email: data.email },
       });
     } catch (error: any) {
-      if (error?.response?.data?.message === 'EMAIL_NOT_VERIFIED') {
-        router.push({ pathname: '/(auth)/verify-email', params: { email: data.email } });
-        return;
-      }
       Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
   };
 
-  const quickLogin = async (email: string, password: string) => {
+  const quickLogin = async (email: string) => {
     setLoading(true);
     try {
-      const { login_token } = await authService.login({ email, password });
+      const { login_token } = await authService.login({ email });
       router.push({
         pathname: '/(auth)/verify-login-otp',
         params: { login_token, email },
       });
     } catch (error: any) {
-      if (error?.response?.data?.message === 'EMAIL_NOT_VERIFIED') {
-        router.push({ pathname: '/(auth)/verify-email', params: { email } });
-        return;
-      }
       Alert.alert('Login Failed', getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -187,7 +178,7 @@ export default function LoginScreen() {
 
             <View style={[styles.divider, { marginTop: 20 }]}>
               <View style={[styles.line, { backgroundColor: theme.border }]} />
-              <Text style={[typography.caption, { color: theme.textMuted, marginHorizontal: 12 }]}>or use password</Text>
+              <Text style={[typography.caption, { color: theme.textMuted, marginHorizontal: 12 }]}>or use email</Text>
               <View style={[styles.line, { backgroundColor: theme.border }]} />
             </View>
           </Animated.View>
@@ -216,31 +207,7 @@ export default function LoginScreen() {
             )}
           />
 
-          <Controller
-            control={control}
-            name="password"
-            rules={{ required: 'Password is required' }}
-            render={({ field: { onChange, value } }) => (
-              <Input
-                label="Password"
-                placeholder="Enter your password"
-                secureTextEntry={!showPass}
-                value={value}
-                onChangeText={onChange}
-                error={errors.password?.message as string}
-                leftIcon={<Ionicons name="lock-closed-outline" size={18} color={theme.textMuted} />}
-                rightIcon={<Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color={theme.textMuted} />}
-                onRightPress={() => setShowPass(!showPass)}
-              />
-            )}
-          />
-
-          <Pressable onPress={() => router.push('/(auth)/forgot-password')}
-            style={{ alignSelf: 'flex-end', marginBottom: 24, marginTop: -8 }}>
-            <Text style={[typography.label, { color: theme.primaryLight }]}>Forgot password?</Text>
-          </Pressable>
-
-          <Button title="Continue" onPress={handleSubmit(onSubmit)} size="lg" loading={loading} />
+          <Button title="Continue" onPress={handleSubmit(onSubmit)} size="lg" loading={loading} style={{ marginTop: 20 }} />
         </Animated.View>
 
         {/* Register CTA */}
@@ -259,14 +226,14 @@ export default function LoginScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable
-              onPress={() => quickLogin('niyexdroid@gmail.com', 'passwordtn')}
+              onPress={() => quickLogin('niyexdroid@gmail.com')}
               style={[styles.devBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
               <Ionicons name="person-outline" size={15} color={theme.primary} />
               <Text style={[typography.small, { color: theme.primary, fontWeight: '600' }]}>Tenant</Text>
             </Pressable>
             <Pressable
-              onPress={() => quickLogin('niyexdroid@outlook.com', 'passwordld')}
+              onPress={() => quickLogin('niyexdroid@outlook.com')}
               style={[styles.devBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
             >
               <Ionicons name="business-outline" size={15} color={theme.accent} />

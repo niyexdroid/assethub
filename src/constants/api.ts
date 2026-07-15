@@ -21,18 +21,14 @@ console.log('[api] base url:', API_BASE_URL);
 
 export const API_ENDPOINTS = {
   auth: {
-    login:          '/auth/login',
+    login:           '/auth/login',
     verifyLoginOtp:  '/auth/login/verify',
     resendLoginOtp:  '/auth/login/resend',
+    completeProfile: '/auth/complete-profile',
     google:          '/auth/google',
     googleComplete:  '/auth/google/complete',
-    register:            '/auth/register',
-    verifyEmail:         '/auth/verify-email',
-    resendVerification:  '/auth/resend-verification',
-    logout:              '/auth/logout',
-    refresh:        '/auth/refresh',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword:  '/auth/reset-password',
+    logout:          '/auth/logout',
+    refresh:         '/auth/refresh',
   },
   users: {
     me:             '/users/me',
