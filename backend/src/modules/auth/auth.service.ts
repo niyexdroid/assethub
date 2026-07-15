@@ -10,8 +10,7 @@ import {
   verifyRefreshToken,
   accessTokenTtlSeconds,
 } from './strategies/jwt.strategy';
-import { generateOtp, verifyOtp } from './strategies/otp.strategy';
-import type { RegisterInput, LoginInput, ResetPasswordInput, GoogleCompleteInput } from './auth.validators';
+import type { LoginInput, CompleteProfileInput, GoogleCompleteInput } from './auth.validators';
 import type { UserRole } from '../../types/user.types';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -20,130 +19,108 @@ const notificationsService = new NotificationsService();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 
 const LOGIN_OTP_TTL = 600; // 10 minutes
+const PROFILE_TOKEN_TTL = 600; // 10 minutes
 
 export class AuthService {
-  async register(input: RegisterInput) {
-    const { rows: existing } = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [input.email]
-    );
-    if (existing.length > 0) {
-      throw Object.assign(new Error('This email is already registered. Please sign in instead.'), { status: 409 });
-    }
-
-    const password_hash = await bcrypt.hash(input.password, 12);
-    await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, role, package_type, is_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,false)`,
-      [input.email, password_hash, input.first_name, input.last_name, input.role, input.package_type ?? input.package ?? 'standard']
-    );
-
-    const otp = await generateOtp(input.email);
-
-    // Look up newly created user to send OTP notification
-    const { rows: newUser } = await pool.query(
-      'SELECT id FROM users WHERE email = $1', [input.email]
-    );
-    if (newUser[0]) {
-      notificationsService.sendOtp(newUser[0].id, input.email, otp).catch(() => {});
-    }
-
-    return { email: input.email };
-  }
-
-  async verifyEmail(email: string, otp: string) {
-    const valid = await verifyOtp(email, otp);
-    if (!valid) throw Object.assign(new Error('Invalid or expired code'), { status: 400 });
-
-    const { rows } = await pool.query(
-      `UPDATE users SET is_verified = true, updated_at = NOW()
-       WHERE email = $1
-       RETURNING id, email, first_name, last_name, role, package_type, is_verified`,
-      [email]
-    );
-    if (!rows[0]) throw Object.assign(new Error('User not found'), { status: 404 });
-
-    const user = rows[0];
-    const tokenPayload = { sub: user.id, role: user.role };
-    const tokens = await this._issueTokenPair(tokenPayload);
-    return { tokens, user };
-  }
-
-  async resendVerification(email: string) {
-    const { rows } = await pool.query(
-      'SELECT id, is_verified FROM users WHERE email = $1',
-      [email]
-    );
-    if (!rows[0]) throw Object.assign(new Error('User not found'), { status: 404 });
-    if (rows[0].is_verified) throw Object.assign(new Error('Email already verified'), { status: 400 });
-
-    const otp = await generateOtp(email);
-    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
-    return { message: 'Verification code resent.' as const };
-  }
-
+  /**
+   * Passwordless login — initiate.
+   * Sends OTP unconditionally whether the email is registered or not,
+   * preventing account enumeration.
+   */
   async login(input: LoginInput) {
     const { rows } = await pool.query(
-      `SELECT id, email, first_name, last_name, password_hash, role, package_type, is_active, is_verified
+      `SELECT id, email, first_name, last_name, role, is_active, is_verified
        FROM users WHERE email = $1`,
       [input.email]
     );
 
     const user = rows[0];
-    if (!user || !user.password_hash) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
-    if (!user.is_active) throw Object.assign(new Error('Account deactivated'), { status: 403 });
-    if (!user.is_verified) throw Object.assign(new Error('EMAIL_NOT_VERIFIED'), { status: 403 });
 
-    const valid = await bcrypt.compare(input.password, user.password_hash);
-    if (!valid) throw Object.assign(new Error('Invalid credentials'), { status: 401 });
+    // Existing user: check account status
+    if (user) {
+      if (!user.is_active) throw Object.assign(new Error('Account deactivated'), { status: 403 });
+    }
 
-    // Generate login OTP — store in Redis, send via notification channel only
+    // Generate login OTP — unconditionally
     const login_token = randomUUID();
     const otp = randomInt(100000, 1000000).toString();
+
+    const sessionData = user
+      ? { userId: user.id, role: user.role, email: user.email, otp }
+      : { email: input.email, otp, isNew: true };
+
     await redis.set(
       `login:${login_token}`,
-      JSON.stringify({ userId: user.id, role: user.role, email: user.email, otp }),
+      JSON.stringify(sessionData),
       'EX', LOGIN_OTP_TTL
     );
 
-    // Fire-and-forget — don't block the response waiting for notification delivery
-    notificationsService.sendOtp(user.id, user.email, otp).catch(() => {});
+    // Send OTP email — fire-and-forget
+    notificationsService.sendOtp(user?.id, input.email, otp).catch((err) => {
+      console.error('[auth] Failed to send login OTP:', err.message ?? err);
+    });
 
-    // OTP is never returned to client — sent only via notification channel
-    return { requiresOtp: true as const, login_token };
+    return { login_token };
   }
 
   async resendLoginOtp(login_token: string) {
     const raw = await redis.get(`login:${login_token}`);
     if (!raw) throw Object.assign(new Error('Session expired. Please log in again.'), { status: 400 });
 
-    const pending = JSON.parse(raw) as { userId: string; role: string; email: string; otp: string };
+    const pending = JSON.parse(raw) as { userId?: string; role?: string; email: string; otp: string; isNew?: boolean };
     const newOtp  = randomInt(100000, 1000000).toString();
+
+    const updatedData = pending.userId
+      ? { ...pending, otp: newOtp }
+      : { ...pending, otp: newOtp };
 
     await redis.set(
       `login:${login_token}`,
-      JSON.stringify({ ...pending, otp: newOtp }),
+      JSON.stringify(updatedData),
       'EX', LOGIN_OTP_TTL
     );
 
     await notificationsService.sendOtp(pending.userId, pending.email, newOtp);
-    return { message: 'OTP resent' };
+    return { message: 'OTP resent' as const };
   }
 
+  /**
+   * Verify login OTP.
+   * Existing user → returns tokens.
+   * New user → returns profile_token for account completion.
+   */
   async verifyLoginOtp(login_token: string, otp: string) {
     const raw = await redis.get(`login:${login_token}`);
     if (!raw) throw Object.assign(new Error('Session expired. Please log in again.'), { status: 400 });
 
-    const pending = JSON.parse(raw) as { userId: string; role: string; email: string; otp: string };
+    const pending = JSON.parse(raw) as { userId?: string; role?: string; email: string; otp: string; isNew?: boolean };
     if (pending.otp !== otp) throw Object.assign(new Error('Invalid or expired code'), { status: 400 });
 
     await redis.del(`login:${login_token}`);
 
+    // New user — issue profile token so they can complete registration
+    if (pending.isNew) {
+      const profile_token = randomUUID();
+      await redis.set(
+        `profile:${profile_token}`,
+        JSON.stringify({ email: pending.email }),
+        'EX', PROFILE_TOKEN_TTL
+      );
+      return { isNewUser: true as const, profile_token };
+    }
+
+    // Existing user — issue tokens
     const { rows } = await pool.query(
       `SELECT id, email, first_name, last_name, role, package_type, is_verified FROM users WHERE id = $1`,
-      [pending.userId]
+      [pending.userId!]
     );
     const user = rows[0];
+
+    // Auto-verify email on first OTP login (for legacy unverified accounts)
+    if (user && !user.is_verified) {
+      await pool.query('UPDATE users SET is_verified = true, updated_at = NOW() WHERE id = $1', [user.id]);
+      user.is_verified = true;
+    }
 
     const tokenPayload = { sub: user.id, role: user.role };
     const tokens = await this._issueTokenPair(tokenPayload);
@@ -159,6 +136,57 @@ export class AuthService {
         is_verified:  user.is_verified,
       },
     };
+  }
+
+  /**
+   * Complete profile for a new user after OTP verification.
+   * The profile_token proves the email was verified via OTP.
+   */
+  async completeProfile(input: CompleteProfileInput) {
+    const raw = await redis.get(`profile:${input.profile_token}`);
+    if (!raw) throw Object.assign(new Error('Session expired. Please start again.'), { status: 400 });
+
+    const { email } = JSON.parse(raw) as { email: string };
+
+    // Race condition guard: check email not already taken
+    const { rows: existing } = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+    if (existing.length > 0) {
+      // Email already registered — just sign them in
+      await redis.del(`profile:${input.profile_token}`);
+      const user = existing[0];
+      const { rows: fullUser } = await pool.query(
+        'SELECT id, email, first_name, last_name, role, package_type, is_verified FROM users WHERE id = $1',
+        [user.id]
+      );
+      const u = fullUser[0];
+      const tokenPayload = { sub: u.id, role: u.role };
+      const tokens = await this._issueTokenPair(tokenPayload);
+      return {
+        tokens,
+        user: {
+          id: u.id, email: u.email, first_name: u.first_name, last_name: u.last_name,
+          role: u.role, package_type: u.package_type, is_verified: u.is_verified,
+        },
+      };
+    }
+
+    // Create the user — already verified via OTP
+    const { rows } = await pool.query(
+      `INSERT INTO users (email, first_name, last_name, role, package_type, is_verified)
+       VALUES ($1,$2,$3,$4,$5,true)
+       RETURNING id, email, first_name, last_name, role, package_type, is_verified`,
+      [email, input.first_name, input.last_name, input.role, input.package_type ?? input.package ?? 'standard']
+    );
+
+    await redis.del(`profile:${input.profile_token}`);
+
+    const user = rows[0];
+    const tokenPayload = { sub: user.id, role: user.role };
+    const tokens = await this._issueTokenPair(tokenPayload);
+    return { tokens, user };
   }
 
   /**
@@ -340,36 +368,6 @@ export class AuthService {
       tokens,
       user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name, role: user.role },
     };
-  }
-
-  async requestPasswordReset(email: string) {
-    const { rows } = await pool.query(
-      'SELECT id FROM users WHERE email = $1', [email]
-    );
-    if (!rows[0]) {
-      // User not found — return gracefully to prevent email enumeration
-      return { message: 'If that email is registered, a reset code has been sent.' as const };
-    }
-    const otp = await generateOtp(email);
-    notificationsService.sendOtp(rows[0].id, email, otp).catch(() => {});
-    return { message: 'If that email is registered, a reset code has been sent.' as const };
-  }
-
-  async resetPassword(input: ResetPasswordInput) {
-    const valid = await verifyOtp(input.email, input.otp);
-    if (!valid) throw Object.assign(new Error('Invalid or expired code'), { status: 400 });
-
-    const password_hash = await bcrypt.hash(input.new_password, 12);
-    const { rows } = await pool.query(
-      'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2 RETURNING id',
-      [password_hash, input.email]
-    );
-    if (!rows[0]) throw Object.assign(new Error('User not found'), { status: 404 });
-
-    // Invalidate all refresh families on password reset
-    await this._revokeAllRefreshFamilies(rows[0].id);
-
-    return { reset: true };
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────

@@ -1,38 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
-import { registerSchema, loginSchema, loginVerifySchema, googleAuthSchema, googleCompleteSchema, refreshSchema, resetRequestSchema, resetPasswordSchema, verifyEmailSchema, resendVerificationSchema } from './auth.validators';
+import { loginSchema, loginVerifySchema, completeProfileSchema, googleAuthSchema, googleCompleteSchema, refreshSchema } from './auth.validators';
 
 const svc = new AuthService();
-
-export async function register(req: Request, res: Response, next: NextFunction) {
-  try {
-    const input  = registerSchema.parse(req.body);
-    const { email } = await svc.register(input);
-    res.status(201).json({ email });
-  } catch (err) { return next(err); }
-}
-
-export async function verifyEmail(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { email, otp } = verifyEmailSchema.parse(req.body);
-    const result = await svc.verifyEmail(email, otp);
-    res.json(result);
-  } catch (err) { return next(err); }
-}
-
-export async function resendVerification(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { email } = resendVerificationSchema.parse(req.body);
-    const result = await svc.resendVerification(email);
-    res.json(result);
-  } catch (err) { return next(err); }
-}
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const input  = loginSchema.parse(req.body);
-    const { requiresOtp, login_token } = await svc.login(input);
-    res.json({ requiresOtp, login_token });
+    const { login_token } = await svc.login(input);
+    res.json({ login_token });
   } catch (err) { return next(err); }
 }
 
@@ -50,6 +26,14 @@ export async function verifyLoginOtp(req: Request, res: Response, next: NextFunc
     const { login_token, otp } = loginVerifySchema.parse(req.body);
     const data = await svc.verifyLoginOtp(login_token, otp);
     res.json(data);
+  } catch (err) { return next(err); }
+}
+
+export async function completeProfile(req: Request, res: Response, next: NextFunction) {
+  try {
+    const input  = completeProfileSchema.parse(req.body);
+    const result = await svc.completeProfile(input);
+    res.status(201).json(result);
   } catch (err) { return next(err); }
 }
 
@@ -77,25 +61,10 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
   } catch (err) { return next(err); }
 }
 
-export async function forgotPassword(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { email } = resetRequestSchema.parse(req.body);
-    const result = await svc.requestPasswordReset(email);
-    res.json(result);
-  } catch (err) { return next(err); }
-}
-
-export async function resetPassword(req: Request, res: Response, next: NextFunction) {
-  try {
-    const input  = resetPasswordSchema.parse(req.body);
-    const result = await svc.resetPassword(input);
-    res.json(result);
-  } catch (err) { return next(err); }
-}
-
 export async function adminLogin(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'email and password required' });
     const result = await svc.adminLogin(email, password);
     res.json(result);
   } catch (err) { return next(err); }

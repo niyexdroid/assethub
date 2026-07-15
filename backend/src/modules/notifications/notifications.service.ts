@@ -77,7 +77,7 @@ export class NotificationsService {
    * Tries WhatsApp first, falls back to SMS.
    * Stores the SendChamp reference in Redis so the auth service can verify it.
    */
-  async sendOtp(userId: string, email: string, otp: string): Promise<void> {
+  async sendOtp(userId: string | undefined, email: string, otp: string): Promise<void> {
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -131,14 +131,16 @@ export class NotificationsService {
 
     const result = await sendEmail(email, 'Your AssetHub verification code', html);
 
-    try {
-      await pool.query(
-        `INSERT INTO notifications (user_id, type, title, body, data, channels, email_sent)
-         VALUES ($1,'otp','Verification Code',$2,$3,'["email"]',$4)`,
-        [userId, `OTP sent to ${email}`, JSON.stringify({ otp }), result.success]
-      );
-    } catch (err) {
-      logger.error('Failed to persist OTP notification record', err);
+    if (userId) {
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, body, data, channels, email_sent)
+           VALUES ($1,'otp','Verification Code',$2,$3,'["email"]',$4)`,
+          [userId, `OTP sent to ${email}`, JSON.stringify({ otp }), result.success]
+        );
+      } catch (err) {
+        logger.error('Failed to persist OTP notification record', err);
+      }
     }
   }
 

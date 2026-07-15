@@ -10,7 +10,7 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 const TABS: { name: string; label: string; icon: IoniconsName; iconFocused: IoniconsName }[] = [
   { name: 'home',             label: 'Explore',   icon: 'compass-outline',             iconFocused: 'compass'              },
   { name: 'tenancy/index',    label: 'Tenancy',   icon: 'document-text-outline',       iconFocused: 'document-text'        },
-  { name: 'payments/index',   label: 'Payments',  icon: 'wallet-outline',              iconFocused: 'wallet'               },
+  { name: 'payments',         label: 'Payments',  icon: 'wallet-outline',              iconFocused: 'wallet'               },
   { name: 'roommates/index',  label: 'Roommates', icon: 'people-outline',              iconFocused: 'people'               },
   { name: 'complaints/index', label: 'Support',   icon: 'chatbubble-ellipses-outline', iconFocused: 'chatbubble-ellipses'  },
 ];
@@ -77,8 +77,7 @@ export default function TenantLayout() {
       <Tabs.Screen name="property/[id]"        options={{ href: null }} />
       <Tabs.Screen name="complaints/[id]"       options={{ href: null }} />
       <Tabs.Screen name="complaints/new"        options={{ href: null }} />
-      <Tabs.Screen name="payments/pay"          options={{ href: null }} />
-      <Tabs.Screen name="payments/receipt"      options={{ href: null }} />
+      {/* payments/pay and payments/receipt are now handled by payments/_layout.tsx Stack */}
       <Tabs.Screen name="roommates/profile"     options={{ href: null }} />
       <Tabs.Screen name="roommates/requests"    options={{ href: null }} />
       <Tabs.Screen name="apply/[propertyId]"    options={{ href: null }} />
