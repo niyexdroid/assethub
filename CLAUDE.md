@@ -81,6 +81,22 @@ middleware/        # Auth, rate-limit, error handler
 - **Queue**: BullMQ + Redis
 - **Fonts**: Plus Jakarta Sans
 
+## DevOps — Railway Deployment
+
+Use the **railway-devops** agent for ALL deployment operations. The main coding agent never deploys directly — it hands off to this agent.
+
+```bash
+# Spawn from main coding agent:
+Agent(subagent_type="railway-devops", description="Deploy <feature> to production",
+  prompt="Deploy commit <sha> to production. Changes: <summary>. Env vars: <if any>.")
+```
+
+**Railway IDs:** Project `4383208a-1a61-465c-ad0c-b70b7b712b5f` | Service `9a0e9047-3d2e-4208-a294-19343f8e7a4b` | Env `5d1c6603-1a56-4f46-aefc-27fdf43db8bc`
+
+**Known issues:** GitHub auto-deploy webhook is unreliable — use direct `deploy` (tarball), not push-to-deploy. Dashboard "Redeploy" re-runs last-built commit, not HEAD.
+
+See `.claude/agents/railway-devops.md` for full agent spec.
+
 ## Environment
 
 - `backend/.env` — DB URL, Redis URL, JWT secret, Paystack keys, Firebase, ImageKit, SMTP
