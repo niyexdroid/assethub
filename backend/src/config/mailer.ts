@@ -1,7 +1,66 @@
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from './env';
+
+// ── Minimal transporter type (replaces nodemailer) ────────────────────────────
+// ponytail: nodemailer had 8 CVEs (SMTP injection, TLS validation, etc).
+// We only use createTransport({send}) as abstraction — no SMTP code paths.
+// A 4-line interface replaces 200KB of dependency.
+
+interface MailData {
+  from: string;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  replyTo?: string;
+  cc?: string | string[];
+  bcc?: string | string[];
+  attachments?: Array<{ filename?: string; content: string | Buffer }>;
+}
+
+interface SendMailResult {
+  messageId: string;
+  envelope: { from: string; to: string[] };
+  accepted: string[];
+  rejected: string[];
+  response: string;
+}
+
+type SendCallback = (err: Error | null, info?: SendMailResult) => void;
+
+interface TransportConfig {
+  name: string;
+  version: string;
+  send: (mail: { data: MailData; message: { getEnvelope(): { from: string; to: string[] } } }, done: SendCallback) => void;
+}
+
+interface Transporter {
+  sendMail(mail: MailData): Promise<SendMailResult>;
+}
+
+function createTransport(config: TransportConfig): Transporter {
+  return {
+    sendMail(mail: MailData): Promise<SendMailResult> {
+      return new Promise((resolve, reject) => {
+        config.send(
+          {
+            data: mail,
+            message: {
+              getEnvelope: () => ({
+                from: mail.from,
+                to: Array.isArray(mail.to) ? mail.to : [mail.to],
+              }),
+            },
+          },
+          (err: Error | null, info?: SendMailResult) => {
+            if (err) reject(err);
+            else resolve(info!);
+          },
+        );
+      });
+    },
+  };
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +98,7 @@ function parseToList(
  */
 
 function createBrevoTransport(): Transporter {
-  return nodemailer.createTransport({
+  return createTransport({
     name: 'brevo',
     version: '1.0.0',
 
@@ -104,7 +163,7 @@ function createBrevoTransport(): Transporter {
         done(err);
       }
     },
-  } as any);
+  });
 }
 
 /**
@@ -117,7 +176,7 @@ function createBrevoTransport(): Transporter {
 function createResendTransport(): Transporter {
   const resend = new Resend(env.RESEND_API_KEY);
 
-  return nodemailer.createTransport({
+  return createTransport({
     name: 'resend',
     version: '1.0.0',
 
@@ -162,7 +221,7 @@ function createResendTransport(): Transporter {
         done(err);
       }
     },
-  } as any);
+  });
 }
 
 /**
@@ -174,7 +233,7 @@ function createResendTransport(): Transporter {
  */
 
 function createHttpTransport(): Transporter {
-  return nodemailer.createTransport({
+  return createTransport({
     name: 'generic-http',
     version: '1.0.0',
 
@@ -228,7 +287,7 @@ function createHttpTransport(): Transporter {
         done(err);
       }
     },
-  } as any);
+  });
 }
 
 // ── Auto-select ─────────────────────────────────────────────────────────────────
