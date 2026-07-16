@@ -21,7 +21,7 @@ interface Template {
 
 /** Escape HTML entities in user-supplied strings to prevent injection. */
 function esc(s?: string): string {
-  if (!s) return '';
+  if (s == null) return '';
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -31,9 +31,10 @@ function esc(s?: string): string {
 }
 
 export function getTemplate(type: NotificationType, vars: TemplateVars): Template {
-  // Sanitize all user-supplied values before interpolation
+  // Sanitize user-supplied values.  `||` fallbacks ensure the `esc('')` default
+  // (empty string – falsy) doesn't break greeting/default logic that used `??`.
   const v: TemplateVars = {
-    name:      esc(vars.name),
+    name:      esc(vars.name) || 'there',
     amount:    esc(vars.amount),
     property:  esc(vars.property),
     daysUntilDue: vars.daysUntilDue,
@@ -47,15 +48,15 @@ export function getTemplate(type: NotificationType, vars: TemplateVars): Templat
     otp: {
       title:        'Verification Code',
       sms:          `Your AssetHub verification code is: ${v.otp}. Valid for 10 minutes. Do not share.`,
-      whatsapp:     `Hello ${v.name ?? 'there'}! Your AssetHub verification code is *${v.otp}*. Valid for 10 minutes. Do not share with anyone.`,
+      whatsapp:     `Hello ${v.name}! Your AssetHub verification code is *${v.otp}*. Valid for 10 minutes. Do not share with anyone.`,
       emailSubject: 'Your AssetHub Verification Code',
-      emailHtml:    `<p>Hello ${v.name ?? 'there'},</p><p>Your verification code is: <strong>${v.otp}</strong></p><p>Valid for 10 minutes.</p>`,
+      emailHtml:    `<p>Hello ${v.name},</p><p>Your verification code is: <strong>${v.otp}</strong></p><p>Valid for 10 minutes.</p>`,
     },
 
     payment_due: {
       title:        `Rent Due in ${v.daysUntilDue} Day${v.daysUntilDue === 1 ? '' : 's'}`,
       sms:          `Reminder: ₦${v.amount} rent for ${v.property} is due on ${v.dueDate}. Pay now on AssetHub.`,
-      whatsapp:     `Hi ${v.name ?? 'there'} 👋\n\nYour rent of *₦${v.amount}* for *${v.property}* is due on *${v.dueDate}*.\n\nPay now on AssetHub to avoid late fees.`,
+      whatsapp:     `Hi ${v.name} 👋\n\nYour rent of *₦${v.amount}* for *${v.property}* is due on *${v.dueDate}*.\n\nPay now on AssetHub to avoid late fees.`,
       emailSubject: `Rent Reminder: ₦${v.amount} due on ${v.dueDate}`,
       emailHtml:    `<p>Hi ${v.name},</p><p>Your rent of <strong>₦${v.amount}</strong> for <strong>${v.property}</strong> is due on <strong>${v.dueDate}</strong>.</p><p>Please pay via the AssetHub app to avoid late fees.</p>`,
     },
