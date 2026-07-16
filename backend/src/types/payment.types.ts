@@ -22,5 +22,11 @@ export interface PaystackWebhookEvent {
     channel:          string;
     gateway_response: string;
     subaccount?: { subaccount_code: string };
+    metadata?: {
+      project?:     string;
+      schedule_id?: string;
+      tenancy_id?:  string;
+      tenant_id?:   string;
+    };
   };
 }

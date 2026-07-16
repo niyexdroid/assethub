@@ -39,6 +39,18 @@ export async function paystackWebhook(req: Request, res: Response): Promise<void
     return;
   }
 
+  // Multi-project guard: skip events not originating from AssetHub.
+  // Multiple projects share this Paystack account; metadata.project tells us
+  // which project initiated the payment.
+  if (event.data?.metadata?.project !== 'assethub') {
+    logger.debug('Skipping Paystack event for other project', {
+      event: event.event,
+      reference: event.data?.reference,
+      project: event.data?.metadata?.project,
+    });
+    return;
+  }
+
   logger.info(`Paystack webhook: ${event.event}`, { reference: event.data?.reference });
 
   try {

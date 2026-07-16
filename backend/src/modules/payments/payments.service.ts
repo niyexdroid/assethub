@@ -39,6 +39,7 @@ export class PaymentsService {
       // bearer tells Paystack the transaction fees come from the subaccount
       bearer: 'subaccount',
       metadata: {
+        project:     'assethub',
         schedule_id: input.schedule_id,
         tenancy_id:  schedule.tenancy_id,
         tenant_id:   tenantId,
