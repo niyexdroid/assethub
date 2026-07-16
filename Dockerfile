@@ -26,5 +26,7 @@ RUN npm ci --omit=dev
 COPY --from=backend-builder /backend/dist ./dist
 COPY --from=backend-builder /backend/src/database/migrations ./dist/database/migrations
 COPY --from=web-builder /web/dist ./public
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 EXPOSE 4000
+USER appuser
 CMD ["sh", "-c", "node dist/database/migrate.js && node dist/app.js"]

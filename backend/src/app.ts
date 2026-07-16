@@ -28,7 +28,7 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginOpenerPolicy: false,
 }));
-app.use(cors({ origin: env.NODE_ENV === 'production' ? '*' : '*' }));
+app.use(cors({ origin: env.NODE_ENV === 'production' ? ['https://assethub.niyexdroidtechnologies.com', 'https://backend-production-aec4.up.railway.app'] : '*' }));
 app.use(express.json());
 
 // Global rate limiter

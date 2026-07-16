@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       POSTGRES_DB: ${POSTGRES_DB:-niyexdroid_assethub}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,10 +24,10 @@ services:
     container_name: assethub_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_dev_password}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -49,9 +49,9 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-niyexdroid}:${POSTGRES_PASSWORD:-secret}@postgres:5432/${POSTGRES_DB:-niyexdroid_assethub}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev_password}@redis:6379
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"
     volumes:
       - ./backend/src:/app/src
 
@@ -64,7 +64,7 @@ services:
     environment:
       VITE_API_URL: http://localhost:8086
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./admin/src:/app/src
 
