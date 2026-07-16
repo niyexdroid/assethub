@@ -33,14 +33,14 @@ export class KycService {
     return { status: 'pending', message: 'NIN submitted for review' };
   }
 
-  async submitStudentId(userId: string, studentIdUrl: string, schoolName: string, schoolEmail?: string) {
+  async submitStudentId(userId: string, studentIdUrl: string, schoolName: string, schoolEmail?: string, matricNumber?: string) {
     await pool.query(
-      `INSERT INTO kyc_verifications (user_id, student_id_url, school_name, school_email, id_doc_type, verification_status)
-       VALUES ($1, $2, $3, $4, 'student_id', 'pending')
+      `INSERT INTO kyc_verifications (user_id, student_id_url, school_name, school_email, matric_number, id_doc_type, verification_status)
+       VALUES ($1, $2, $3, $4, $5, 'student_id', 'pending')
        ON CONFLICT (user_id) DO UPDATE
-         SET student_id_url = $2, school_name = $3, school_email = $4,
+         SET student_id_url = $2, school_name = $3, school_email = $4, matric_number = $5,
              id_doc_type = 'student_id', verification_status = 'pending'`,
-      [userId, studentIdUrl, schoolName, schoolEmail ?? null]
+      [userId, studentIdUrl, schoolName, schoolEmail ?? null, matricNumber ?? null]
     );
 
     if (schoolEmail) {

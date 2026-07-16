@@ -6,6 +6,7 @@ import { kycService } from '@/services/kyc.service'
 export default function KycStudentScreen() {
   const [schoolName, setSchoolName] = useState('')
   const [schoolEmail, setSchoolEmail] = useState('')
+  const [matricNumber, setMatricNumber] = useState('')
   const [studentIdFile, setStudentIdFile] = useState<File | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -21,6 +22,7 @@ export default function KycStudentScreen() {
       const fd = new FormData()
       fd.append('school_name', schoolName.trim())
       if (schoolEmail.trim()) fd.append('school_email', schoolEmail.trim())
+      if (matricNumber.trim()) fd.append('matric_number', matricNumber.trim())
       fd.append('student_id', studentIdFile)
       await kycService.submitStudentId(fd)
       setSuccess(true)
@@ -57,6 +59,12 @@ export default function KycStudentScreen() {
             <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">School Email <span className="font-normal normal-case">(optional)</span></label>
             <input type="email" value={schoolEmail} onChange={(e) => setSchoolEmail(e.target.value)}
               placeholder="e.g. student@unilag.edu.ng"
+              className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase block mb-2">Matriculation Number <span className="font-normal normal-case">(optional)</span></label>
+            <input type="text" value={matricNumber} onChange={(e) => setMatricNumber(e.target.value)}
+              placeholder="e.g. U2018/5560055"
               className="w-full h-11 px-4 rounded-xl border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
           <div>

@@ -9,8 +9,9 @@ export const ninSchema = z.object({
 });
 
 export const studentIdSchema = z.object({
-  school_name:  z.string().min(2),
-  school_email: z.string().email().optional(),
+  school_name:   z.string().min(2),
+  school_email:  z.string().email().optional(),
+  matric_number: z.string().max(50).optional(),
 });
 
 export const schoolEmailVerifySchema = z.object({

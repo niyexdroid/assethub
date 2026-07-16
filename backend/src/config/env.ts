@@ -26,8 +26,6 @@ const schema = z.object({
   MAIL_API_KEY:           z.string().optional().default(''),
   MAIL_FROM_EMAIL:        z.string().email(),
   MAIL_FROM_NAME:         z.string().default('AssetHub'),
-  GMAIL_USER:            z.string().email().optional(),
-  GMAIL_APP_PASSWORD:    z.string().optional(),
   IMAGEKIT_PUBLIC_KEY:    z.string(),
   IMAGEKIT_PRIVATE_KEY:   z.string(),
   IMAGEKIT_URL_ENDPOINT:  z.string(),

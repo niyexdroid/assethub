@@ -7,17 +7,17 @@ export const createComplaintSchema = z.object({
     'landlord_conduct','noise','listing_misrepresentation','roommate','other'
   ]),
   title:       z.string().min(5).max(255),
-  description: z.string().min(10),
+  description: z.string().min(10).max(5000),
   priority:    z.enum(['low','medium','high','critical']).default('medium'),
 });
 
 export const addMessageSchema = z.object({
-  message:     z.string().min(1),
+  message:     z.string().min(1).max(2000),
   attachments: z.array(z.string()).default([]),
 });
 
 export const resolveSchema = z.object({
-  resolution_notes: z.string().min(5),
+  resolution_notes: z.string().min(5).max(5000),
 });
 
 export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;

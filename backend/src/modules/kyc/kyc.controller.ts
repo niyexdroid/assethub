@@ -22,10 +22,10 @@ export async function submitNin(req: Request, res: Response, next: NextFunction)
 
 export async function submitStudentId(req: Request, res: Response, next: NextFunction) {
   try {
-    const { school_name, school_email } = studentIdSchema.parse(req.body);
+    const { school_name, school_email, matric_number } = studentIdSchema.parse(req.body);
     const studentIdUrl = (req as any).file?.path;
     if (!studentIdUrl) return res.status(400).json({ error: 'Student ID file required' });
-    const result = await svc.submitStudentId(req.user!.id, studentIdUrl, school_name, school_email);
+    const result = await svc.submitStudentId(req.user!.id, studentIdUrl, school_name, school_email, matric_number);
     return res.json(result);
   } catch (err) { return next(err); }
 }
