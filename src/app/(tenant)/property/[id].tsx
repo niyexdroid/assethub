@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../hooks/useTheme';
 import { Button } from '../../../components/ui/Button';
 import { Badge }  from '../../../components/ui/Badge';
+import { VerificationBadge } from '../../../components/ui/VerificationBadge';
 import { Card }   from '../../../components/ui/Card';
 import { typography } from '../../../constants/typography';
 import { propertiesService, Property } from '../../../services/properties.service';
@@ -185,7 +186,7 @@ export default function PropertyDetailScreen() {
                   <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>
                     {p.landlord_first_name} {p.landlord_last_name}
                   </Text>
-                  <Badge label="Verified" variant="success" />
+                  <VerificationBadge tier={p.landlord_badge} expanded />
                 </View>
               </Card>
             </Animated.View>

@@ -25,6 +25,7 @@ export interface Property {
   landlord_first_name?: string;
   landlord_last_name?: string;
   landlord_photo?: string | null;
+  landlord_badge?: number;
   created_at: string;
 }
 

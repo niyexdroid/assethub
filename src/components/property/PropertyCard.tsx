@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { typography } from '../../constants/typography';
 import { formatNGN } from '../../utils/format';
 
@@ -15,18 +16,19 @@ const CARD_W    = width - 40;
 
 interface Props {
   property: {
-    id:            string;
-    title:         string;
-    address:       string;
-    lga:           string;
-    monthly_rent?: number;
-    yearly_rent?:  number;
-    tenancy_mode:  string;
-    photos:        string[];
-    bedrooms?:     number;
-    bathrooms?:    number;
-    listing_type:  string;
-    amenities:     string[];
+    id:             string;
+    title:          string;
+    address:        string;
+    lga:            string;
+    monthly_rent?:  number;
+    yearly_rent?:   number;
+    tenancy_mode:   string;
+    photos:         string[];
+    bedrooms?:      number;
+    bathrooms?:     number;
+    listing_type:   string;
+    amenities:      string[];
+    landlord_badge?: number;
   };
   index?: number;
 }
@@ -69,6 +71,7 @@ export function PropertyCard({ property: p, index = 0 }: Props) {
           <View style={styles.imageBadges}>
             {p.listing_type === 'student' && <Badge label="Student" variant="info" />}
             <Badge label={p.lga} variant="default" />
+            <VerificationBadge tier={p.landlord_badge} />
           </View>
 
           {/* Price bottom-left */}
