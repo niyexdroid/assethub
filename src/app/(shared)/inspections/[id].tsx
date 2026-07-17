@@ -47,7 +47,7 @@ export default function InspectionDetailScreen() {
   useEffect(() => { load(); }, [load]);
 
   const isTenant = user?.id === report?.created_by;
-  const canSign = report && ['pending_review', 'disputed'].includes(report.status);
+  const canSign = report && ['pending_review', 'disputed'].includes(report.status) && report.content_hash;
   const userSigned = report && (isTenant ? report.tenant_signed_at : report.landlord_signed_at);
   const canDispute = report?.status === 'signed' && (isTenant || user?.id !== report?.created_by);
 

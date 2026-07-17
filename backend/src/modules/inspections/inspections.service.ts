@@ -69,7 +69,7 @@ export class InspectionsService {
 
   async list(userId: string) {
     const { rows } = await pool.query(
-      `SELECT r.id, r.status, r.created_at, r.updated_at,
+      `SELECT r.id, r.tenancy_id, r.status, r.created_at, r.updated_at,
               r.tenant_signed_at, r.landlord_signed_at,
               p.title AS property_title
        FROM inspection_reports r

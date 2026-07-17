@@ -10,7 +10,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus';
 import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
 import { Input } from '../../../components/ui/Input';
 import { InspectionItem } from '../../../components/inspection/InspectionItem';
 import { InspectionCamera } from '../../../components/inspection/InspectionCamera';
@@ -20,11 +19,6 @@ import { inspectionsService } from '../../../services/inspections.service';
 import { CONDITION_OPTIONS } from '../../../types/inspections';
 import type { InspectionItem as InspectionItemType } from '../../../types/inspections';
 
-function condIcon(condition: string): string {
-  const opt = CONDITION_OPTIONS.find(o => o.value === condition);
-  return (opt?.icon ?? 'help-circle-outline') as string;
-}
-
 export default function NewInspectionScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -33,6 +27,7 @@ export default function NewInspectionScreen() {
 
   // Tenancy selection
   const [tenancies, setTenancies] = useState<Tenancy[]>([]);
+  const [tenancyError, setTenancyError] = useState('');
   const [loadingTenancies, setLoadingTenancies] = useState(true);
   const [selectedTenancyId, setSelectedTenancyId] = useState(paramTenancyId ?? '');
 
@@ -56,7 +51,7 @@ export default function NewInspectionScreen() {
       try {
         const list = await tenanciesService.getTenantTenancies();
         setTenancies(list.filter(t => t.status === 'active'));
-      } catch { /* ignore */ }
+      } catch { setTenancyError('Could not load tenancies.'); }
       finally { setLoadingTenancies(false); }
     })();
   }, []);
@@ -119,11 +114,11 @@ export default function NewInspectionScreen() {
   };
 
   // Delete item
-  const handleDeleteItem = async (itemId: string, index: number) => {
+  const handleDeleteItem = async (itemId: string) => {
     if (!reportId) return;
     try {
       await inspectionsService.deleteItem(reportId, itemId);
-      setItems(prev => prev.filter((_, i) => i !== index));
+      setItems(prev => prev.filter(item => item.id !== itemId));
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message ?? 'Could not delete item.');
     }
@@ -180,9 +175,9 @@ export default function NewInspectionScreen() {
 
         {tenancies.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-            <Ionicons name="home-outline" size={48} color={theme.textMuted} />
+            <Ionicons name={tenancyError ? 'cloud-offline-outline' : 'home-outline'} size={48} color={theme.textMuted} />
             <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 12, textAlign: 'center' }]}>
-              No active tenancies. Start a tenancy first.
+              {tenancyError || 'No active tenancies. Start a tenancy first.'}
             </Text>
           </View>
         ) : (
@@ -243,7 +238,7 @@ export default function NewInspectionScreen() {
         {!isOnline && (
           <View style={[styles.offlineNote, { backgroundColor: theme.warning + '18', borderColor: theme.warning }]}>
             <Ionicons name="cloud-offline-outline" size={16} color={theme.warning} />
-            <Text style={[typography.caption, { color: theme.warning }]}>Offline — photos will be uploaded when you're back online</Text>
+            <Text style={[typography.caption, { color: theme.warning }]}>Offline — photo upload and submission require internet</Text>
           </View>
         )}
 
@@ -362,7 +357,7 @@ export default function NewInspectionScreen() {
               <Animated.View key={item.id} entering={FadeInDown.delay(i * 40).springify()}>
                 <InspectionItem
                   item={item}
-                  onDelete={() => handleDeleteItem(item.id, i)}
+                  onDelete={() => handleDeleteItem(item.id)}
                 />
               </Animated.View>
             ))}
