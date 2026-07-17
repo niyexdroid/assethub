@@ -13,7 +13,7 @@ export function useInactivityTimeout() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
   const clearAuth = useAuthStore(s => s.clearAuth)
   const navigate = useNavigate()
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const hiddenAt = useRef<number>(0)
 
   useEffect(() => {

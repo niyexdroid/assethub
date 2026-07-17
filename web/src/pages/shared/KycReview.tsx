@@ -5,7 +5,7 @@ import { kycService } from '@/services/kyc.service'
 import { ErrorState } from '@/components/custom/ErrorState'
 
 export default function KycReviewScreen() {
-  const [status, setStatus] = useState<{ status: string; message?: string } | null>(null)
+  const [status, setStatus] = useState<{ verification_status: string; message?: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -50,12 +50,12 @@ export default function KycReviewScreen() {
           <div>
             <h3 className="font-semibold text-foreground">Verification Status</h3>
             <p className={`text-sm font-medium capitalize ${
-              status?.status === 'verified' ? 'text-emerald-600' :
-              status?.status === 'pending' ? 'text-amber-600' :
-              status?.status === 'rejected' ? 'text-destructive' :
+              status?.verification_status === 'verified' ? 'text-emerald-600' :
+              status?.verification_status === 'pending' ? 'text-amber-600' :
+              status?.verification_status === 'rejected' ? 'text-destructive' :
               'text-muted-foreground'
             }`}>
-              {status?.status?.replace('_', ' ') ?? 'Not submitted'}
+              {status?.verification_status?.replace('_', ' ') ?? 'Not submitted'}
             </p>
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function KycReviewScreen() {
           </div>
         )}
 
-        {!status?.status || status.status === 'rejected' ? (
+        {!status?.verification_status || status.status === 'rejected' ? (
           <div className="mt-6 pt-4 border-t">
             <p className="text-sm text-muted-foreground mb-4">You can retry verification by visiting one of the methods below:</p>
             <div className="flex flex-wrap gap-2">
