@@ -7,16 +7,10 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.allSettled([
-      api.get('/admin/transactions'),
-      api.get('/admin/reports/revenue', { params: {
-        from: new Date(Date.now() - 180 * 864e5).toISOString().split('T')[0],
-        to:   new Date().toISOString().split('T')[0],
-      }}),
-    ]).then(([t, r]) => {
-      if (t.status === 'fulfilled') setTxns(Array.isArray(t.value.data) ? t.value.data : []);
-      setLoading(false);
-    });
+    api.get('/admin/transactions')
+      .then(r => setTxns(Array.isArray(r.data) ? r.data : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const totalRevenue = txns.filter(t => t.status === 'success').reduce((s, t) => s + Number(t.platform_fee ?? 0), 0);
