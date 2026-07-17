@@ -2,6 +2,13 @@ import { z } from 'zod';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Allow empty string for optional URL fields — they should pass validation
+// but be treated as "not configured" downstream.
+const optionalUrl = z.string().refine(
+  (s) => s === '' || /^https?:\/\/.+/.test(s),
+  { message: 'Must be a valid URL or empty' },
+);
+
 const schema = z.object({
   NODE_ENV:              z.enum(['development', 'test', 'production']).default('development'),
   PORT:                  z.string().default('8086'),
@@ -22,9 +29,9 @@ const schema = z.object({
   // Email: Brevo (primary) → Resend → generic HTTP API / Plunk (fallback)
   BREVO_API_KEY:          z.string().optional().default(''),
   RESEND_API_KEY:         z.string().optional().default(''),
-  MAIL_API_URL:           z.string().url().optional().default(''),
+  MAIL_API_URL:           optionalUrl.optional().default(''),
   MAIL_API_KEY:           z.string().optional().default(''),
-  MAIL_FROM_EMAIL:        z.string().email(),
+  MAIL_FROM_EMAIL:        z.string().optional().default(''),
   MAIL_FROM_NAME:         z.string().default('AssetHub'),
   IMAGEKIT_PUBLIC_KEY:    z.string(),
   IMAGEKIT_PRIVATE_KEY:   z.string(),

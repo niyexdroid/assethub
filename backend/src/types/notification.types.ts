@@ -14,6 +14,7 @@ export type NotificationType =
   | 'listing_rejected'
   | 'new_application'
   | 'application_rejected'
+  | 'inspection_update'
   | 'otp';
 
 export interface NotificationPayload {

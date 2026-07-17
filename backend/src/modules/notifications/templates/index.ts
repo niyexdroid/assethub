@@ -156,6 +156,14 @@ export function getTemplate(type: NotificationType, vars: TemplateVars): Templat
       emailSubject: `Application Update — ${v.property}`,
       emailHtml:    `<p>Hi ${v.name},</p><p>Unfortunately your application for <strong>${v.property}</strong> was not successful.</p><p>Don't give up — browse more listings on AssetHub.</p>`,
     },
+
+    inspection_update: {
+      title:        'Inspection Update',
+      sms:          `Your property inspection on AssetHub has been updated. Open the app for details.`,
+      whatsapp:     `🔍 *Inspection Update*\n\nA property inspection has been updated. Open AssetHub to review and respond.`,
+      emailSubject: 'Inspection Report Update',
+      emailHtml:    `<p>Hi ${v.name},</p><p>A property inspection on AssetHub has been updated.</p><p>Log in to review the latest changes.</p>`,
+    },
   };
 
   return templates[type];
