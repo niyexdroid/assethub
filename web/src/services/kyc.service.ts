@@ -16,7 +16,7 @@ export const kycService = {
     })
   },
 
-  getStatus: async (): Promise<{ status: string; message?: string }> => {
+  getStatus: async (): Promise<{ verification_status: string; message?: string }> => {
     const res = await api.get(API_ENDPOINTS.kyc.status)
     return res.data
   },

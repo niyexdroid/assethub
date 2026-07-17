@@ -28,11 +28,10 @@ export default function KycReviewScreen() {
     kycService.getStatus().then(setStatus).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const kycType   = status?.type ?? null;
-  const kycStatus = status?.status ?? 'pending';
+  const kycStatus = status?.verification_status ?? 'not_started';
 
-  const bvnStatus  = kycType ? 'verified' : 'not_started';
-  const ninStatus  = kycType === 'nin' || kycType === 'bvn_nin' ? kycStatus : 'not_started';
+  const bvnStatus  = status?.bvn_verified ? 'verified' : 'not_started';
+  const ninStatus  = status?.nin_verified ? 'verified' : 'not_started';
   const phoneStatus = user?.is_verified ? 'verified' : 'pending';
   const emailStatus = user?.email ? 'verified' : 'not_started';
 

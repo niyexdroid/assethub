@@ -13,7 +13,7 @@ export default function Settings() {
   const [verificationPending, setVerificationPending] = useState(false)
 
   useEffect(() => {
-    kycService.getStatus().then(r => setKycStatus(r.status)).catch(() => setKycStatus('error'))
+    kycService.getStatus().then(r => setKycStatus(r.verification_status)).catch(() => setKycStatus('error'))
   }, [])
 
   useEffect(() => {

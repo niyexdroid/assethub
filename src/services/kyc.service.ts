@@ -24,7 +24,7 @@ export const kycService = {
     });
   },
 
-  getStatus: async (): Promise<{ status: string; type: string | null; verified_at: string | null }> => {
+  getStatus: async (): Promise<{ verification_status: string; bvn_verified?: boolean; nin_verified?: boolean; student_id_url?: string; school_email_verified?: boolean; rejection_reason?: string }> => {
     const res = await api.get(API_ENDPOINTS.kyc.status);
     return res.data;
   },

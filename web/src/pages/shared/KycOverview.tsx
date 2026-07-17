@@ -5,7 +5,7 @@ import { kycService } from '@/services/kyc.service'
 import { ErrorState } from '@/components/custom/ErrorState'
 
 export default function KycOverviewScreen() {
-  const [status, setStatus] = useState<{ status: string; message?: string } | null>(null)
+  const [status, setStatus] = useState<{ verification_status: string; message?: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -55,7 +55,7 @@ export default function KycOverviewScreen() {
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Overall Status</p>
-            <p className="font-semibold text-foreground capitalize">{status?.status?.replace('_', ' ') ?? 'Unknown'}</p>
+            <p className="font-semibold text-foreground capitalize">{status?.verification_status?.replace(/_/g, ' ') ?? 'Not Started'}</p>
           </div>
         </div>
         {status?.message && (
