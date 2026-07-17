@@ -16,6 +16,7 @@ import tenancyRoutes from './modules/tenancies/tenancies.routes';
 import roommateRoutes from './modules/roommates/roommates.routes';
 import complaintRoutes from './modules/complaints/complaints.routes';
 import inspectionRoutes from './modules/inspections/inspections.routes';
+import verificationRoutes from './modules/verifications/verifications.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import userRoutes  from './modules/users/users.routes';
 
@@ -52,7 +53,8 @@ app.use('/api/v1/properties',   propertyRoutes);
 app.use('/api/v1/tenancies',    tenancyRoutes);
 app.use('/api/v1/roommates',    roommateRoutes);
 app.use('/api/v1/complaints',   complaintLimiter, complaintRoutes);
-app.use('/api/v1/inspections', inspectionRoutes);
+app.use('/api/v1/inspections',    inspectionRoutes);
+app.use('/api/v1/verifications', verificationRoutes);
 app.use('/api/v1/admin',        adminRoutes);
 app.use('/api/v1/users',        userRoutes);
 

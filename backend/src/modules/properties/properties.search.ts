@@ -51,6 +51,7 @@ export async function searchProperties(filters: SearchInput) {
             p.tenancy_mode, p.photos, p.caution_fee, p.available_units,
             p.nearest_university, p.gender_preference,
             u.first_name AS landlord_first_name, u.last_name AS landlord_last_name,
+            u.landlord_badge,
             p.created_at
      FROM properties p
      JOIN users u ON u.id = p.landlord_id

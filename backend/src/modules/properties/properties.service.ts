@@ -33,6 +33,7 @@ export class PropertiesService {
               u.first_name AS landlord_first_name,
               u.last_name  AS landlord_last_name,
               u.profile_photo_url AS landlord_photo,
+              u.landlord_badge,
               (SELECT COUNT(*) FROM complaints c
                JOIN tenancies t ON t.id = c.tenancy_id
                WHERE t.property_id = p.id AND c.status != 'closed') AS open_complaints
