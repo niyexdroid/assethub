@@ -70,7 +70,7 @@ export default function KycReviewScreen() {
           </div>
         )}
 
-        {!status?.verification_status || status.status === 'rejected' ? (
+        {!status?.verification_status || status.verification_status === 'rejected' ? (
           <div className="mt-6 pt-4 border-t">
             <p className="text-sm text-muted-foreground mb-4">You can retry verification by visiting one of the methods below:</p>
             <div className="flex flex-wrap gap-2">
