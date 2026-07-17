@@ -67,6 +67,17 @@ export function App() {
               <Route path="/google-complete" element={<GoogleComplete />} />
             </Route>
 
+          {/* ── Shared (any authenticated role) ──────── */}
+          <Route element={<RequireAuth />}>
+            <Route path="/notifications" element={<NotificationsScreen />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/kyc" element={<KycOverviewScreen />} />
+            <Route path="/kyc/bvn" element={<KycBvnScreen />} />
+            <Route path="/kyc/nin" element={<KycNinScreen />} />
+            <Route path="/kyc/student" element={<KycStudentScreen />} />
+            <Route path="/kyc/review" element={<KycReviewScreen />} />
+          </Route>
+
           {/* ── Tenant ───────────────────────────────── */}
           <Route element={<RequireAuth />}>
             <Route element={<RequireRole role="tenant" />}>
@@ -86,13 +97,6 @@ export function App() {
                 <Route path="/roommates" element={<RoommatesListScreen />} />
                 <Route path="/roommates/profile" element={<RoommateProfileScreen />} />
                 <Route path="/roommates/requests" element={<RoommateRequestsScreen />} />
-                <Route path="/notifications" element={<NotificationsScreen />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/kyc" element={<KycOverviewScreen />} />
-                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
-                <Route path="/kyc/nin" element={<KycNinScreen />} />
-                <Route path="/kyc/student" element={<KycStudentScreen />} />
-                <Route path="/kyc/review" element={<KycReviewScreen />} />
               </Route>
             </Route>
           </Route>
@@ -111,13 +115,6 @@ export function App() {
                 <Route path="/landlord/payments" element={<Payments />} />
                 <Route path="/landlord/complaints" element={<Complaints />} />
                 <Route path="/landlord/complaints/:id" element={<ComplaintDetail />} />
-                <Route path="/notifications" element={<NotificationsScreen />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/kyc" element={<KycOverviewScreen />} />
-                <Route path="/kyc/bvn" element={<KycBvnScreen />} />
-                <Route path="/kyc/nin" element={<KycNinScreen />} />
-                <Route path="/kyc/student" element={<KycStudentScreen />} />
-                <Route path="/kyc/review" element={<KycReviewScreen />} />
               </Route>
             </Route>
           </Route>
