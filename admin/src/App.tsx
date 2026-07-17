@@ -8,7 +8,8 @@ import KYC          from './pages/KYC';
 import Complaints   from './pages/Complaints';
 import Transactions from './pages/Transactions';
 import Settings     from './pages/Settings';
-import AuditLogs    from './pages/AuditLogs';
+import AuditLogs      from './pages/AuditLogs';
+import Verifications from './pages/Verifications';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('admin_token');
@@ -32,7 +33,8 @@ export default function App() {
                 <Route path="/complaints"   element={<Complaints />}   />
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/settings"     element={<Settings />}     />
-                <Route path="/audit"        element={<AuditLogs />}    />
+                <Route path="/audit"         element={<AuditLogs />}    />
+                <Route path="/verifications" element={<Verifications />} />
               </Routes>
             </Layout>
           </RequireAuth>

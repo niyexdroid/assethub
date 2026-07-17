@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
   MessageSquare, CreditCard, Settings, ScrollText, LogOut,
+  BadgeCheck,
 } from 'lucide-react';
 
 const NAV = [
@@ -12,6 +13,7 @@ const NAV = [
   { to: '/complaints',    icon: MessageSquare,    label: 'Complaints'  },
   { to: '/transactions',  icon: CreditCard,       label: 'Transactions'},
   { to: '/settings',      icon: Settings,         label: 'Settings'    },
+  { to: '/verifications', icon: BadgeCheck,       label: 'Verifications' },
   { to: '/audit',         icon: ScrollText,       label: 'Audit Logs'  },
 ];
 
