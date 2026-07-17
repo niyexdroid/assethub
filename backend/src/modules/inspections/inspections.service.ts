@@ -155,51 +155,60 @@ export class InspectionsService {
   async submitForReview(reportId: string, userId: string) {
     await this.verifyDraftOwner(reportId, userId);
 
-    // Compute content_hash from items
-    const { rows: items } = await pool.query(
-      `SELECT id, item_name, description, condition, photo_urls,
-              capture_source, captured_at, notes, sort_order
-       FROM inspection_items
-       WHERE report_id = $1 ORDER BY sort_order, created_at`,
-      [reportId],
-    );
-    if (!items.length) {
-      throw Object.assign(new Error('Add at least one item before submitting'), { status: 400 });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT 1 FROM inspection_reports WHERE id = $1 FOR UPDATE', [reportId]);
+
+      const { rows: items } = await client.query(
+        `SELECT id, item_name, description, condition, photo_urls,
+                capture_source, captured_at, notes, sort_order
+         FROM inspection_items
+         WHERE report_id = $1 ORDER BY sort_order, created_at`,
+        [reportId],
+      );
+      if (!items.length) {
+        throw Object.assign(new Error('Add at least one item before submitting'), { status: 400 });
+      }
+
+      const contentHash = crypto
+        .createHash('sha256')
+        .update(JSON.stringify(items))
+        .digest('hex');
+
+      const { rows } = await client.query(
+        `UPDATE inspection_reports
+         SET status = 'pending_review', content_hash = $1, updated_at = NOW()
+         WHERE id = $2 RETURNING *`,
+        [contentHash, reportId],
+      );
+
+      await client.query('COMMIT');
+
+      // Notify landlord
+      const { rows: tenancyRows } = await pool.query(
+        `SELECT t.landlord_id, p.title AS property_title
+         FROM tenancies t
+         JOIN properties p ON p.id = t.property_id
+         JOIN inspection_reports r ON r.tenancy_id = t.id
+         WHERE r.id = $1`,
+        [reportId],
+      );
+      if (tenancyRows[0]) {
+        await notifSvc.send({
+          userId:   tenancyRows[0].landlord_id,
+          type:     'inspection_update',
+          title:    'Inspection Ready for Review',
+          body:     `Tenant submitted inspection for ${tenancyRows[0].property_title}`,
+          channels: ['push'],
+          data:     { report_id: reportId },
+        });
+      }
+
+      return rows[0];
+    } finally {
+      client.release();
     }
-
-    const contentHash = crypto
-      .createHash('sha256')
-      .update(JSON.stringify(items))
-      .digest('hex');
-
-    const { rows } = await pool.query(
-      `UPDATE inspection_reports
-       SET status = 'pending_review', content_hash = $1, updated_at = NOW()
-       WHERE id = $2 RETURNING *`,
-      [contentHash, reportId],
-    );
-
-    // Notify landlord
-    const { rows: tenancyRows } = await pool.query(
-      `SELECT t.landlord_id, p.title AS property_title
-       FROM tenancies t
-       JOIN properties p ON p.id = t.property_id
-       JOIN inspection_reports r ON r.tenancy_id = t.id
-       WHERE r.id = $1`,
-      [reportId],
-    );
-    if (tenancyRows[0]) {
-      await notifSvc.send({
-        userId:   tenancyRows[0].landlord_id,
-        type:     'inspection_update',
-        title:    'Inspection Ready for Review',
-        body:     `Tenant submitted inspection for ${tenancyRows[0].property_title}`,
-        channels: ['push'],
-        data:     { report_id: reportId },
-      });
-    }
-
-    return rows[0];
   }
 
   async sign(reportId: string, userId: string, input: SignReportInput) {
@@ -229,75 +238,93 @@ export class InspectionsService {
     }
 
     const signField = isTenant ? 'tenant_signed_at' : 'landlord_signed_at';
-    const otherField = isTenant ? 'landlord_signed_at' : 'tenant_signed_at';
 
     if (report[signField]) {
       throw Object.assign(new Error('You have already signed this report'), { status: 400 });
     }
 
-    // Update GPS if provided
-    const gpsSets: string[] = [];
-    const gpsVals: any[] = [];
-    let gIdx = 1;
-    if (input.gps_lat !== undefined) {
-      gpsSets.push(`gps_lat = $${gIdx++}`);
-      gpsVals.push(input.gps_lat);
-    }
-    if (input.gps_lng !== undefined) {
-      gpsSets.push(`gps_lng = $${gIdx++}`);
-      gpsVals.push(input.gps_lng);
-    }
-    if (input.gps_captured_at !== undefined) {
-      gpsSets.push(`gps_captured_at = $${gIdx++}`);
-      gpsVals.push(input.gps_captured_at);
-    }
+    // Use a transaction so a PDF generation failure rolls back the
+    // signature UPDATE — no inconsistent state where both signatures
+    // are present but status != 'signed'.
+    const signClient = await pool.connect();
+    try {
+      await signClient.query('BEGIN');
 
-    const gpsClause = gpsSets.length ? `, ${gpsSets.join(', ')}` : '';
-    gpsVals.push(reportId);
-    const { rows: updated } = await pool.query(
-      `UPDATE inspection_reports
-       SET ${signField} = NOW()${gpsClause}, updated_at = NOW()
-       WHERE id = $${gIdx} RETURNING *`,
-      gpsVals,
-    );
-
-    // If both signed, generate PDF
-    const finalReport = updated[0];
-    if (finalReport.tenant_signed_at && finalReport.landlord_signed_at) {
-      const pdfUrl = await this.generatePdf(finalReport.id);
-      const { rows: finalRows } = await pool.query(
-        `UPDATE inspection_reports SET status = 'signed', pdf_url = $1, updated_at = NOW()
-         WHERE id = $2 RETURNING *`,
-        [pdfUrl, reportId],
-      );
-
-      // Notify both parties
-      for (const uid of [report.tenant_id, report.landlord_id]) {
-        await notifSvc.send({
-          userId:   uid,
-          type:     'inspection_update',
-          title:    'Inspection Signed',
-          body:     'Both parties have signed the inspection report',
-          channels: ['push'],
-          data:     { report_id: reportId },
-        });
+      const gpsSets: string[] = [];
+      const gpsVals: any[] = [];
+      let gIdx = 1;
+      if (input.gps_lat !== undefined) {
+        gpsSets.push(`gps_lat = $${gIdx++}`);
+        gpsVals.push(input.gps_lat);
+      }
+      if (input.gps_lng !== undefined) {
+        gpsSets.push(`gps_lng = $${gIdx++}`);
+        gpsVals.push(input.gps_lng);
+      }
+      if (input.gps_captured_at !== undefined) {
+        gpsSets.push(`gps_captured_at = $${gIdx++}`);
+        gpsVals.push(input.gps_captured_at);
       }
 
-      return finalRows[0];
+      const gpsClause = gpsSets.length ? `, ${gpsSets.join(', ')}` : '';
+      gpsVals.push(reportId);
+      const { rows: updated } = await signClient.query(
+        `UPDATE inspection_reports
+         SET ${signField} = NOW()${gpsClause}, updated_at = NOW()
+         WHERE id = $${gIdx} AND status IN ('pending_review', 'disputed') RETURNING *`,
+        gpsVals,
+      );
+
+      if (!updated[0]) {
+        throw Object.assign(new Error('Report status changed — please refresh and try again'), { status: 409 });
+      }
+
+      const finalReport = updated[0];
+
+      if (finalReport.tenant_signed_at && finalReport.landlord_signed_at) {
+        const pdfUrl = await this.generatePdf(finalReport.id);
+        await signClient.query(
+          `UPDATE inspection_reports SET status = 'signed', pdf_url = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [pdfUrl, reportId],
+        );
+        await signClient.query('COMMIT');
+
+        // Notify both parties
+        for (const uid of [report.tenant_id, report.landlord_id]) {
+          await notifSvc.send({
+            userId:   uid,
+            type:     'inspection_update',
+            title:    'Inspection Signed',
+            body:     'Both parties have signed the inspection report',
+            channels: ['push'],
+            data:     { report_id: reportId },
+          });
+        }
+
+        return { ...finalReport, status: 'signed', pdf_url: pdfUrl };
+      }
+
+      await signClient.query('COMMIT');
+
+      // Notify other party
+      const otherId = isTenant ? report.landlord_id : report.tenant_id;
+      await notifSvc.send({
+        userId:   otherId,
+        type:     'inspection_update',
+        title:    'Inspection Signed',
+        body:     `${isTenant ? 'Tenant' : 'Landlord'} signed the inspection`,
+        channels: ['push'],
+        data:     { report_id: reportId },
+      });
+
+      return updated[0];
+    } catch (err) {
+      await signClient.query('ROLLBACK');
+      throw err;
+    } finally {
+      signClient.release();
     }
-
-    // Notify other party
-    const otherId = isTenant ? report.landlord_id : report.tenant_id;
-    await notifSvc.send({
-      userId:   otherId,
-      type:     'inspection_update',
-      title:    'Inspection Signed',
-      body:     `${isTenant ? 'Tenant' : 'Landlord'} signed the inspection`,
-      channels: ['push'],
-      data:     { report_id: reportId },
-    });
-
-    return updated[0];
   }
 
   async dispute(reportId: string, userId: string, input: DisputeReportInput) {
@@ -382,9 +409,13 @@ export class InspectionsService {
 
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', async () => {
-        const buffer = Buffer.concat(chunks);
-        const result = await uploadFile(buffer, `inspection-${reportId}.pdf`, 'documents');
-        resolve(result.url);
+        try {
+          const buffer = Buffer.concat(chunks);
+          const result = await uploadFile(buffer, `inspection-${reportId}.pdf`, 'documents');
+          resolve(result.url);
+        } catch (err) {
+          reject(err);
+        }
       });
       doc.on('error', reject);
 
