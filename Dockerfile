@@ -38,4 +38,4 @@ COPY --from=admin-builder /admin/dist ./public/admin
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 EXPOSE 4000
 USER appuser
-CMD ["sh", "-c", "node dist/database/migrate.js && node dist/database/seed-admin.js && node dist/app.js"]
+CMD ["sh", "-c", "node dist/database/migrate.js && node dist/database/seed-admin.js; node dist/app.js"]

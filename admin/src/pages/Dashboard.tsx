@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, Users, CreditCard, ShieldCheck, AlertTriangle, TrendingUp } from 'lucide-react';
 import { api } from '../api';
 
@@ -77,7 +78,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-xl border border-gray-200 mb-6">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900">Pending Property Approvals</h2>
-                <a href="/properties" className="text-sm text-primary hover:underline">View all</a>
+                <Link to="/properties" className="text-sm text-primary hover:underline">View all</Link>
               </div>
               <div className="divide-y divide-gray-50">
                 {props.slice(0, 5).map((p: any) => (
@@ -97,7 +98,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Recent Users</h2>
-              <a href="/users" className="text-sm text-primary hover:underline">View all</a>
+              <Link to="/users" className="text-sm text-primary hover:underline">View all</Link>
             </div>
             <div className="divide-y divide-gray-50">
               {users.slice(0, 5).map((u: any) => (

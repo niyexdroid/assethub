@@ -17,7 +17,7 @@ export default function Login() {
       const { tokens, user } = res.data;
       localStorage.setItem('admin_token', tokens.access_token);
       localStorage.setItem('admin_user', JSON.stringify(user));
-      window.location.href = '/';
+      window.location.href = '/admin';
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Login failed. Check your credentials.');
     } finally {

@@ -5,13 +5,18 @@ import Badge from '../components/Badge';
 export default function Transactions() {
   const [txns,    setTxns]    = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
 
-  useEffect(() => {
+  const load = () => {
+    setError('');
+    setLoading(true);
     api.get('/admin/transactions')
       .then(r => setTxns(Array.isArray(r.data) ? r.data : []))
-      .catch(() => {})
+      .catch(() => setError('Failed to load transactions. Check your connection.'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const totalRevenue = txns.filter(t => t.status === 'success').reduce((s, t) => s + Number(t.platform_fee ?? 0), 0);
   const totalRent    = txns.filter(t => t.status === 'success').reduce((s, t) => s + Number(t.amount ?? 0), 0);
@@ -38,9 +43,15 @@ export default function Transactions() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {error && (
+          <div className="p-4 mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center gap-2">
+            <span>{error}</span>
+            <button onClick={load} className="ml-auto text-red-700 underline text-xs">Retry</button>
+          </div>
+        )}
         {loading ? (
           <div className="p-12 text-center text-gray-400">Loading...</div>
-        ) : txns.length === 0 ? (
+        ) : !error && txns.length === 0 ? (
           <div className="p-12 text-center text-gray-400">No transactions yet</div>
         ) : (
           <table className="w-full text-sm">

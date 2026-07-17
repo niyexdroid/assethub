@@ -22,7 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
-    window.location.href = '/login';
+    window.location.href = '/admin/login';
   };
 
   const user = JSON.parse(localStorage.getItem('admin_user') ?? '{}');

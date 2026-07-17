@@ -112,7 +112,26 @@
       "Bash(RAILWAY_CALLER=\"skill:use-railway@1.3.5\" railway connect --project 4383208a-1a61-465c-ad0c-b70b7b712b5f --environment 5d1c6603-1a56-4f46-aefc-27fdf43db8bc Postgres)",
       "Bash(RAILWAY_CALLER=\"skill:use-railway@1.3.5\" railway tcp-proxy list --project 4383208a-1a61-465c-ad0c-b70b7b712b5f --environment 5d1c6603-1a56-4f46-aefc-27fdf43db8bc --service 49d706a5-7dda-4a68-954b-f5c9e22d0370 --json)",
       "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'{d[\\\\\"total\\\\\"]} properties, first: {d[\\\\\"data\\\\\"][0][\\\\\"title\\\\\"]}'\\)\")",
-      "Bash(cygpath -u \"C:\\\\dev\\\\assethub\\\\web\\\\src\")"
+      "Bash(cygpath -u \"C:\\\\dev\\\\assethub\\\\web\\\\src\")",
+      "Bash(git checkout *)",
+      "Bash(git rm *)",
+      "Skill(gstack)",
+      "Bash(git reset *)",
+      "Bash(npx eas *)",
+      "Bash(npm uninstall *)",
+      "Bash(npm test *)",
+      "Bash(npx jest *)",
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "mcp__railway__list_deployments",
+      "Read(//c/Users/Niyexdroid/.railway/**)",
+      "Read(//c/Users/Niyexdroid/.config/railway/**)",
+      "Bash(railway *)",
+      "Bash(docker compose *)",
+      "Bash(echo \"=== LIST INSPECTIONS ===\")",
+      "Bash(echo \"\")",
+      "Bash(echo \"=== GET TENANCIES ===\")",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(json.dumps\\(data[:2] if isinstance\\(data,list\\) else data, indent=2\\)\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); props=d.get\\('data',d\\) if isinstance\\(d,dict\\) else d; [print\\(f'id={p[\\\\\"id\\\\\"]} title={p.get\\(\\\\\"title\\\\\",\\\\\"\\\\\"\\)[:30]} landlord={p.get\\(\\\\\"landlord_first_name\\\\\",\\\\\"\\\\\"\\)} badge={p.get\\(\\\\\"landlord_badge\\\\\",\\\\\"MISSING\\\\\"\\)}'\\) for p in \\(props if isinstance\\(props,list\\) else props.get\\('data',[]\\)\\)]\")"
     ]
   }
 }

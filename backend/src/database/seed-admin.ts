@@ -27,7 +27,7 @@ async function seed() {
     [admin.email, 'Admin', 'User', hash],
   );
 
-  console.log(`[seed] Admin user created: ${admin.email} / ${admin.password}`);
+  console.log(`[seed] Admin user created: ${admin.email}`);
   await pool.end();
 }
 
