@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { upload } from '../../middleware/upload';
 import * as ctrl from './inspections.controller';
 
 const router = Router();
 
 router.use(authenticate);
 
+router.post('/upload-photo',             upload.single('photo'), ctrl.uploadPhoto);
 router.post('/',                        ctrl.createReport);
 router.get('/',                         ctrl.list);
 router.get('/:id',                      ctrl.getById);

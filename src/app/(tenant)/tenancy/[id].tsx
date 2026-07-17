@@ -278,7 +278,15 @@ export default function TenantTenancyDetailScreen() {
       {/* Actions */}
       <View style={{ gap: 10, marginTop: 20 }}>
         {isActive && (
-          <Button title="Terminate Tenancy" onPress={handleTerminate} variant="outline" size="lg" loading={terminating} />
+          <>
+            <Button
+              title="Start Inspection"
+              onPress={() => router.push(`/(tenant)/inspections/new?tenancyId=${id}`)}
+              icon="camera-outline"
+              size="lg"
+            />
+            <Button title="Terminate Tenancy" onPress={handleTerminate} variant="outline" size="lg" loading={terminating} />
+          </>
         )}
         <Button title="Back" onPress={() => router.back()} variant="ghost" size="lg" />
       </View>

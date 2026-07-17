@@ -91,6 +91,17 @@ export const API_ENDPOINTS = {
     student: '/kyc/student',
     status:  '/kyc/status',
   },
+  inspections: {
+    upload:  '/inspections/upload-photo',
+    list:    '/inspections',
+    create:  '/inspections',
+    detail:  (id: string) => `/inspections/${id}`,
+    items:   (id: string) => `/inspections/${id}/items`,
+    item:    (reportId: string, itemId: string) => `/inspections/${reportId}/items/${itemId}`,
+    submit:  (id: string) => `/inspections/${id}/submit`,
+    sign:    (id: string) => `/inspections/${id}/sign`,
+    dispute: (id: string) => `/inspections/${id}/dispute`,
+  },
   notifications: {
     list:    '/notifications',
     markRead:    (id: string) => `/notifications/${id}/read`,

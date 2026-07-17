@@ -27,10 +27,15 @@
       "package": "com.niyexdroid.assethub",
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": ["CAMERA", "ACCESS_FINE_LOCATION"]
     },
     "ios": {
-      "bundleIdentifier": "com.niyexdroid.assethub"
+      "bundleIdentifier": "com.niyexdroid.assethub",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AssetHub uses your camera to capture property condition photos during inspections.",
+        "NSLocationWhenInUseUsageDescription": "AssetHub records your location when signing inspection reports for legal verification."
+      }
     },
     "extra": {
       "router": {},

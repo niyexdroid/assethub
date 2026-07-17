@@ -8,6 +8,9 @@ import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { typography } from '../../../constants/typography';
 import { tenanciesService, Tenancy } from '../../../services/tenancies.service';
+import { inspectionsService } from '../../../services/inspections.service';
+import type { InspectionReport } from '../../../types/inspections';
+import { INSPECTION_STATUS_BADGE } from '../../../types/inspections';
 import { formatNGN } from '../../../utils/format';
 
 const STATUS_BADGE: Record<string, { variant: 'danger' | 'warning' | 'success' | 'info'; label: string }> = {
@@ -22,6 +25,7 @@ export default function LandlordTenancyDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [tenancy, setTenancy] = useState<Tenancy | null>(null);
+  const [inspections, setInspections] = useState<InspectionReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [terminating, setTerminating] = useState(false);
@@ -32,8 +36,12 @@ export default function LandlordTenancyDetailScreen() {
     setLoading(true);
     setError('');
     try {
-      const data = await tenanciesService.getById(id);
-      setTenancy(data);
+      const [t, insp] = await Promise.all([
+        tenanciesService.getById(id),
+        inspectionsService.list(),
+      ]);
+      setTenancy(t);
+      setInspections(insp.filter(r => r.tenancy_id === id));
     } catch {
       setError('Could not load tenancy details.');
     } finally {
@@ -234,6 +242,43 @@ export default function LandlordTenancyDetailScreen() {
         </View>
       </View>
 
+      {/* Inspections */}
+      <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={styles.cardHeader}>
+          <Ionicons name="camera-outline" size={18} color={theme.textMuted} />
+          <Text style={[typography.label, { color: theme.textMuted }]}>INSPECTIONS</Text>
+        </View>
+        {inspections.length === 0 ? (
+          <Text style={[typography.small, { color: theme.textMuted, marginTop: 8, textAlign: 'center', paddingVertical: 8 }]}>
+            No inspections yet. The tenant can start one from their tenancy.
+          </Text>
+        ) : (
+          <View style={{ marginTop: 8, gap: 8 }}>
+            {inspections.map(r => {
+              const b = INSPECTION_STATUS_BADGE[r.status] ?? INSPECTION_STATUS_BADGE.draft;
+              return (
+                <Pressable
+                  key={r.id}
+                  onPress={() => router.push(`/(shared)/inspections/${r.id}`)}
+                  style={[styles.inspectionRow, { borderColor: theme.border }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.bodyMed, { color: theme.textPrimary }]} numberOfLines={1}>
+                      Inspection {r.id.slice(0, 8)}...
+                    </Text>
+                    <Text style={[typography.caption, { color: theme.textMuted, marginTop: 2 }]}>
+                      {new Date(r.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </Text>
+                  </View>
+                  <Badge label={b.label} variant={b.variant} />
+                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} style={{ marginLeft: 8 }} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
       {/* Created */}
       <Text style={[typography.caption, { color: theme.textMuted, marginTop: 8, textAlign: 'center' }]}>
         Created {formatDate(tenancy.created_at)}
@@ -257,4 +302,5 @@ const styles = StyleSheet.create({
   gridItem:   { width: '50%', marginTop: 10 },
   divider:    { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 14 },
   dot:        { width: 8, height: 8, borderRadius: 4 },
+  inspectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
 });

@@ -4,8 +4,17 @@ import {
   createReportSchema, addItemSchema, updateItemSchema,
   signReportSchema, disputeReportSchema,
 } from './inspections.validator';
+import { uploadFile } from '../../services/upload.service';
 
 const svc = new InspectionsService();
+
+export async function uploadPhoto(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.file) throw Object.assign(new Error('No photo uploaded'), { status: 400 });
+    const result = await uploadFile(req.file.buffer, req.file.originalname, 'properties');
+    res.status(201).json({ url: result.url });
+  } catch (err) { return next(err); }
+}
 
 export async function createReport(req: Request, res: Response, next: NextFunction) {
   try {
