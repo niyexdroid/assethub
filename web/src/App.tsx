@@ -6,6 +6,7 @@ import { RequireRole } from '@/components/guards/RequireRole'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { TenantLayout } from '@/components/layout/TenantLayout'
 import { LandlordLayout } from '@/components/layout/LandlordLayout'
+import { SharedLayout } from '@/components/layout/SharedLayout'
 
 // Auth pages
 import { Login } from '@/pages/auth/Login'
@@ -69,13 +70,15 @@ export function App() {
 
           {/* ── Shared (any authenticated role) ──────── */}
           <Route element={<RequireAuth />}>
-            <Route path="/notifications" element={<NotificationsScreen />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/kyc" element={<KycOverviewScreen />} />
-            <Route path="/kyc/bvn" element={<KycBvnScreen />} />
-            <Route path="/kyc/nin" element={<KycNinScreen />} />
-            <Route path="/kyc/student" element={<KycStudentScreen />} />
-            <Route path="/kyc/review" element={<KycReviewScreen />} />
+            <Route element={<SharedLayout />}>
+              <Route path="/notifications" element={<NotificationsScreen />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/kyc" element={<KycOverviewScreen />} />
+              <Route path="/kyc/bvn" element={<KycBvnScreen />} />
+              <Route path="/kyc/nin" element={<KycNinScreen />} />
+              <Route path="/kyc/student" element={<KycStudentScreen />} />
+              <Route path="/kyc/review" element={<KycReviewScreen />} />
+            </Route>
           </Route>
 
           {/* ── Tenant ───────────────────────────────── */}
