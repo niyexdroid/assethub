@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Ban, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, XCircle, Ban, Eye } from 'lucide-react';
 import { api } from '../api';
 import Badge from '../components/Badge';
 

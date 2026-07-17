@@ -1,17 +1,36 @@
-import { useNavigate } from 'react-router-dom'
-import { User, LogOut, Mail, Phone, Shield, BadgeCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { User, LogOut, Mail, Phone, Shield, BadgeCheck, FileCheck, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { authService } from '@/services/auth.service'
+import { kycService } from '@/services/kyc.service'
+import { verificationsService } from '@/services/verifications.service'
 
 export default function Settings() {
   const { user, refreshToken, clearAuth } = useAuthStore()
   const navigate = useNavigate()
+  const [kycStatus, setKycStatus] = useState<string | null>(null)
+  const [verificationPending, setVerificationPending] = useState(false)
+
+  useEffect(() => {
+    kycService.getStatus().then(r => setKycStatus(r.status)).catch(() => setKycStatus('error'))
+  }, [])
+
+  useEffect(() => {
+    if (user?.role === 'landlord') {
+      verificationsService.list().then(r => {
+        setVerificationPending(r.some(v => v.status === 'pending'))
+      }).catch(() => {})
+    }
+  }, [user?.role])
 
   const handleLogout = () => {
     authService.logout(refreshToken ?? undefined).catch(() => {})
     clearAuth()
     navigate('/login')
   }
+
+  const isLandlord = user?.role === 'landlord'
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -71,6 +90,56 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* KYC */}
+      <Link to="/kyc" className="block rounded-xl border bg-card p-4 mb-3 hover:border-primary/30 transition-colors">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <FileCheck className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Identity Verification (KYC)</p>
+              <p className="text-xs text-muted-foreground">
+                {kycStatus === 'approved' ? (
+                  <span className="text-emerald-600">Verified</span>
+                ) : kycStatus === 'pending' ? (
+                  <span className="text-amber-600">Pending review</span>
+                ) : kycStatus === 'rejected' ? (
+                  <span className="text-red-600">Rejected — tap to resubmit</span>
+                ) : (
+                  'Verify your identity to unlock features'
+                )}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </div>
+      </Link>
+
+      {/* Landlord verification */}
+      {isLandlord && (
+        <Link to="/kyc" className="block rounded-xl border bg-card p-4 mb-3 hover:border-primary/30 transition-colors">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <BadgeCheck className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Landlord Verification</p>
+                <p className="text-xs text-muted-foreground">
+                  {verificationPending ? (
+                    <span className="text-amber-600">Pending review</span>
+                  ) : (
+                    'Submit documents to earn trust badges'
+                  )}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+        </Link>
+      )}
 
       {/* Logout */}
       <button

@@ -5,9 +5,6 @@ import Badge from '../components/Badge';
 export default function Transactions() {
   const [txns,    setTxns]    = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [from,    setFrom]    = useState('');
-  const [to,      setTo]      = useState('');
-  const [revenue, setRevenue] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.allSettled([
@@ -18,7 +15,6 @@ export default function Transactions() {
       }}),
     ]).then(([t, r]) => {
       if (t.status === 'fulfilled') setTxns(Array.isArray(t.value.data) ? t.value.data : []);
-      if (r.status === 'fulfilled') setRevenue(Array.isArray(r.value.data) ? r.value.data : []);
       setLoading(false);
     });
   }, []);

@@ -60,11 +60,18 @@ app.use('/api/v1/users',        userRoutes);
 
 app.use(errorHandler);
 
-// Serve static web app in production
+// Serve static web app + admin panel in production
 if (env.NODE_ENV === 'production') {
   const publicDir = path.join(__dirname, '..', 'public');
+
+  // Admin panel — served at /admin
+  app.use('/admin', express.static(path.join(publicDir, 'admin')));
+  app.get('/admin/*', (_req, res) => {
+    res.sendFile(path.join(publicDir, 'admin', 'index.html'));
+  });
+
+  // Web app — served at /
   app.use(express.static(publicDir));
-  // SPA fallback — all unmatched GET routes serve index.html
   app.get('*', (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   });
