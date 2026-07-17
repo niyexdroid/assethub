@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold } from '@expo-google-fonts/poppins';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useThemeStore } from '../store/theme.store';
 import { useAuthStore } from '../store/auth.store';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useInactivityTimeout } from '../hooks/useInactivityTimeout';
 import { OfflineBanner } from '../components/ui/OfflineBanner';
 
 // Hide splash after 3 s no matter what — belt-and-suspenders
@@ -37,6 +39,7 @@ function AuthGate() {
 export default function RootLayout() {
   const { mode, theme } = useThemeStore();
   const { loadAuth }    = useAuthStore();
+  const { onTouchStart } = useInactivityTimeout();
   usePushNotifications();
   useFonts({ Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold });
 
@@ -46,19 +49,24 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.background }}>
-      <SafeAreaProvider>
-        <OfflineBanner />
-        <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-        <AuthGate />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)"       />
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(landlord)"   />
-          <Stack.Screen name="(tenant)"     />
-          <Stack.Screen name="(shared)"     />
-          <Stack.Screen name="+not-found"   />
-        </Stack>
-      </SafeAreaProvider>
+      <View
+        style={{ flex: 1 }}
+        onStartShouldSetResponderCapture={() => { onTouchStart(); return false; }}
+      >
+        <SafeAreaProvider>
+          <OfflineBanner />
+          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+          <AuthGate />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)"       />
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(landlord)"   />
+            <Stack.Screen name="(tenant)"     />
+            <Stack.Screen name="(shared)"     />
+            <Stack.Screen name="+not-found"   />
+          </Stack>
+        </SafeAreaProvider>
+      </View>
     </GestureHandlerRootView>
   );
 }

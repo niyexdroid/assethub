@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth.store'
+import { InactivityWatcher } from '@/components/InactivityWatcher'
 
 export function RequireAuth() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -29,5 +30,10 @@ export function RequireAuth() {
     return <Navigate to="/login" replace />
   }
 
-  return <Outlet />
+  return (
+    <>
+      <InactivityWatcher />
+      <Outlet />
+    </>
+  )
 }
