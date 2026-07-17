@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../../hooks/useTheme';
 import { useNetworkStatus } from '../../../hooks/useNetworkStatus';
+import { useOfflineQueue, type DraftItem } from '../../../hooks/useOfflineQueue';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { InspectionItem } from '../../../components/inspection/InspectionItem';
@@ -19,10 +20,17 @@ import { inspectionsService } from '../../../services/inspections.service';
 import { CONDITION_OPTIONS } from '../../../types/inspections';
 import type { InspectionItem as InspectionItemType } from '../../../types/inspections';
 
+let _offlineId = 0;
+function offlineLocalId(): string {
+  _offlineId++;
+  return `draft_${Date.now().toString(36)}_${_offlineId}`;
+}
+
 export default function NewInspectionScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { isOnline } = useNetworkStatus();
+  const { enqueue, pendingCount, isProcessing: isProcessingQueue, progress: queueProgress } = useOfflineQueue();
   const { tenancyId: paramTenancyId } = useLocalSearchParams<{ tenancyId?: string }>();
 
   // Tenancy selection
@@ -36,6 +44,11 @@ export default function NewInspectionScreen() {
   const [items, setItems] = useState<InspectionItemType[]>([]);
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Offline state
+  const [offlineTenancy, setOfflineTenancy] = useState<{ id: string; label: string } | null>(null);
+  const [offlineItems, setOfflineItems] = useState<DraftItem[]>([]);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   // Add-item form
   const [formName, setFormName] = useState('');
@@ -142,6 +155,49 @@ export default function NewInspectionScreen() {
     }
   };
 
+  // ── Offline handlers ───────────────────────────────────────────
+
+  const handleAddOfflineItem = () => {
+    if (!formName.trim()) {
+      Alert.alert('Required', 'Enter a name for the item.');
+      return;
+    }
+    const item: DraftItem = {
+      localId: offlineLocalId(),
+      itemName: formName.trim(),
+      condition: formCondition,
+      notes: formNotes.trim() || undefined,
+      photoUri: formPhotoUri,
+      capturedAt: new Date().toISOString(),
+    };
+    setOfflineItems(prev => [...prev, item]);
+    setFormName('');
+    setFormCondition('good');
+    setFormNotes('');
+    setFormPhotoUri(null);
+    setFormExpanded(false);
+  };
+
+  const handleDeleteOfflineItem = (localId: string) => {
+    setOfflineItems(prev => prev.filter(i => i.localId !== localId));
+  };
+
+  const handleSaveDraft = async () => {
+    if (!offlineTenancy) return;
+    if (!offlineItems.length) {
+      Alert.alert('No Items', 'Add at least one item before saving.');
+      return;
+    }
+    await enqueue({
+      tenancyId: offlineTenancy.id,
+      tenancyLabel: offlineTenancy.label,
+      items: offlineItems,
+    });
+    setOfflineItems([]);
+    setOfflineTenancy(null);
+    setDraftSaved(true);
+  };
+
   const selectedTenancy = tenancies.find(t => t.id === selectedTenancyId);
 
   // ── Loading tenancies ──
@@ -154,7 +210,12 @@ export default function NewInspectionScreen() {
   }
 
   // ── Select tenancy step ──
-  if (!selectedTenancyId || !reportId) {
+  const hasOfflineSession = !!offlineTenancy || offlineItems.length > 0;
+  const showTenancySelect = isOnline
+    ? (!selectedTenancyId || !reportId) && !hasOfflineSession
+    : (!offlineTenancy && !draftSaved);
+
+  if (showTenancySelect && !isProcessingQueue) {
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.background }}
@@ -184,7 +245,13 @@ export default function NewInspectionScreen() {
           tenancies.map((t, i) => (
             <Animated.View key={t.id} entering={FadeInDown.delay(i * 60).springify()}>
               <Pressable
-                onPress={() => setSelectedTenancyId(t.id)}
+                onPress={() => {
+                  if (!isOnline) {
+                    setOfflineTenancy({ id: t.id, label: t.property_title ?? t.property_address ?? 'Property' });
+                  } else {
+                    setSelectedTenancyId(t.id);
+                  }
+                }}
                 style={[styles.tenancyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
               >
                 <View style={{ flex: 1 }}>
@@ -209,6 +276,56 @@ export default function NewInspectionScreen() {
     );
   }
 
+  // ── Queue processing screen ──
+  if (isProcessingQueue) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[typography.h3, { color: theme.textPrimary, marginTop: 20 }]}>Syncing drafts...</Text>
+        {queueProgress && (
+          <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 8, textAlign: 'center' }]}>
+            {queueProgress.label}{'\n'}
+            Draft {queueProgress.current} of {queueProgress.total}
+          </Text>
+        )}
+        <Text style={[typography.caption, { color: theme.textMuted, marginTop: 12 }]}>
+          Please wait while we upload your saved inspections.
+        </Text>
+      </View>
+    );
+  }
+
+  // ── Draft saved screen ──
+  if (draftSaved && !offlineTenancy && !isOnline) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+        <Ionicons name="cloud-done-outline" size={56} color={theme.success} />
+        <Text style={[typography.h3, { color: theme.textPrimary, marginTop: 16 }]}>Draft Saved</Text>
+        <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 8, textAlign: 'center' }]}>
+          Your inspection will be uploaded automatically when you're back online.
+        </Text>
+        {pendingCount > 0 && (
+          <Text style={[typography.small, { color: theme.primary, marginTop: 12 }]}>
+            {pendingCount} draft{pendingCount !== 1 ? 's' : ''} pending
+          </Text>
+        )}
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 24 }}>
+          <Button
+            title="Create Another"
+            onPress={() => setDraftSaved(false)}
+            variant="outline"
+            size="md"
+          />
+          <Button
+            title="Back to Tenancy"
+            onPress={() => router.back()}
+            size="md"
+          />
+        </View>
+      </View>
+    );
+  }
+
   // ── Add items step ──
   return (
     <KeyboardAvoidingView
@@ -222,7 +339,24 @@ export default function NewInspectionScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Back */}
-        <Pressable onPress={() => router.back()} style={styles.backRow}>
+        <Pressable
+          onPress={() => {
+            if (!isOnline && offlineTenancy) {
+              if (offlineItems.length > 0) {
+                Alert.alert('Discard Items?', `You have ${offlineItems.length} unsaved item${offlineItems.length !== 1 ? 's' : ''}. Going back will discard them.`, [
+                  { text: 'Keep Editing', style: 'cancel' },
+                  { text: 'Discard', style: 'destructive', onPress: () => { setOfflineTenancy(null); setOfflineItems([]); } },
+                ]);
+              } else {
+                setOfflineTenancy(null);
+                setOfflineItems([]);
+              }
+            } else {
+              router.back();
+            }
+          }}
+          style={styles.backRow}
+        >
           <Ionicons name="chevron-back" size={20} color={theme.primaryLight} />
           <Text style={[typography.label, { color: theme.primaryLight }]}>Tenancy</Text>
         </Pressable>
@@ -232,13 +366,33 @@ export default function NewInspectionScreen() {
           Inspection Items
         </Text>
         <Text style={[typography.small, { color: theme.textMuted, marginBottom: 4 }]}>
-          {selectedTenancy?.property_title ?? 'Property'} — document condition of each item
+          {isOnline
+            ? (selectedTenancy?.property_title ?? 'Property')
+            : (offlineTenancy?.label ?? 'Property')} — document condition of each item
         </Text>
 
         {!isOnline && (
-          <View style={[styles.offlineNote, { backgroundColor: theme.warning + '18', borderColor: theme.warning }]}>
-            <Ionicons name="cloud-offline-outline" size={16} color={theme.warning} />
-            <Text style={[typography.caption, { color: theme.warning }]}>Offline — photo upload and submission require internet</Text>
+          <View style={[styles.offlineNote, { backgroundColor: theme.success + '18', borderColor: theme.success }]}>
+            <Ionicons name="save-outline" size={16} color={theme.success} />
+            <Text style={[typography.caption, { color: theme.success }]}>
+              Offline mode — photos saved locally, draft will sync when online
+            </Text>
+          </View>
+        )}
+        {isOnline && hasOfflineSession && (
+          <View style={[styles.offlineNote, { backgroundColor: theme.primary + '18', borderColor: theme.primary }]}>
+            <Ionicons name="wifi-outline" size={16} color={theme.primary} />
+            <Text style={[typography.caption, { color: theme.primary }]}>
+              You're back online! Tap "Save Draft" to upload now.
+            </Text>
+          </View>
+        )}
+        {pendingCount > 0 && (
+          <View style={[styles.offlineNote, { backgroundColor: theme.primary + '18', borderColor: theme.primary, marginTop: 6 }]}>
+            <Ionicons name="cloud-upload-outline" size={16} color={theme.primary} />
+            <Text style={[typography.caption, { color: theme.primary }]}>
+              {pendingCount} draft{pendingCount !== 1 ? 's' : ''} pending upload — will sync automatically
+            </Text>
           </View>
         )}
 
@@ -317,8 +471,8 @@ export default function NewInspectionScreen() {
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
               <Button
                 title="Add Item"
-                onPress={handleAddItem}
-                loading={uploading}
+                onPress={isOnline ? handleAddItem : handleAddOfflineItem}
+                loading={uploading && isOnline}
                 size="sm"
                 style={{ flex: 1 }}
               />
@@ -341,44 +495,112 @@ export default function NewInspectionScreen() {
         )}
 
         {/* Items list */}
-        {items.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-            <Ionicons name="clipboard-outline" size={48} color={theme.textMuted} />
-            <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 12, textAlign: 'center' }]}>
-              No items yet. Start by adding items like walls, floors, appliances, and fixtures.
-            </Text>
-          </View>
+        {isOnline && !hasOfflineSession ? (
+          // ── Online items (server-backed) ──
+          items.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <Ionicons name="clipboard-outline" size={48} color={theme.textMuted} />
+              <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 12, textAlign: 'center' }]}>
+                No items yet. Start by adding items like walls, floors, appliances, and fixtures.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10, marginTop: 20 }}>
+              <Text style={[typography.label, { color: theme.textMuted, marginBottom: 4 }]}>
+                {items.length} {items.length === 1 ? 'ITEM' : 'ITEMS'}
+              </Text>
+              {items.map((item, i) => (
+                <Animated.View key={item.id} entering={FadeInDown.delay(i * 40).springify()}>
+                  <InspectionItem
+                    item={item}
+                    onDelete={() => handleDeleteItem(item.id)}
+                  />
+                </Animated.View>
+              ))}
+            </View>
+          )
         ) : (
-          <View style={{ gap: 10, marginTop: 20 }}>
-            <Text style={[typography.label, { color: theme.textMuted, marginBottom: 4 }]}>
-              {items.length} {items.length === 1 ? 'ITEM' : 'ITEMS'}
-            </Text>
-            {items.map((item, i) => (
-              <Animated.View key={item.id} entering={FadeInDown.delay(i * 40).springify()}>
-                <InspectionItem
-                  item={item}
-                  onDelete={() => handleDeleteItem(item.id)}
-                />
-              </Animated.View>
-            ))}
-          </View>
+          // ── Offline items (local) ──
+          offlineItems.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <Ionicons name="clipboard-outline" size={48} color={theme.textMuted} />
+              <Text style={[typography.bodyMed, { color: theme.textMuted, marginTop: 12, textAlign: 'center' }]}>
+                No items yet. Start by adding items like walls, floors, appliances, and fixtures.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10, marginTop: 20 }}>
+              <Text style={[typography.label, { color: theme.textMuted, marginBottom: 4 }]}>
+                {offlineItems.length} {offlineItems.length === 1 ? 'ITEM' : 'ITEMS'}
+              </Text>
+              {offlineItems.map((draftItem, i) => (
+                <Animated.View key={draftItem.localId} entering={FadeInDown.delay(i * 40).springify()}>
+                  <View style={[styles.formCard, { backgroundColor: theme.surface, borderColor: theme.border, padding: 12 }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{draftItem.itemName}</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                          <Text style={[typography.caption, { color: theme.textMuted, textTransform: 'capitalize' }]}>
+                            {draftItem.condition}
+                          </Text>
+                          {draftItem.photoUri && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                              <Ionicons name="image-outline" size={12} color={theme.success} />
+                              <Text style={[typography.caption, { color: theme.success }]}>Photo saved</Text>
+                            </View>
+                          )}
+                        </View>
+                        {draftItem.notes ? (
+                          <Text style={[typography.caption, { color: theme.textMuted, marginTop: 4 }]}>{draftItem.notes}</Text>
+                        ) : null}
+                      </View>
+                      <Pressable
+                        onPress={() => handleDeleteOfflineItem(draftItem.localId)}
+                        hitSlop={8}
+                        style={{ padding: 4 }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={theme.danger} />
+                      </Pressable>
+                    </View>
+                  </View>
+                </Animated.View>
+              ))}
+            </View>
+          )
         )}
       </ScrollView>
 
       {/* Bottom submit bar */}
-      {items.length > 0 && (
-        <View style={[styles.bottomBar, { backgroundColor: theme.surface, borderColor: theme.border, paddingBottom: insets.bottom + 12 }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{items.length} items</Text>
-            <Text style={[typography.caption, { color: theme.textMuted }]}>Ready to submit for review</Text>
+      {isOnline && !hasOfflineSession ? (
+        items.length > 0 && (
+          <View style={[styles.bottomBar, { backgroundColor: theme.surface, borderColor: theme.border, paddingBottom: insets.bottom + 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{items.length} items</Text>
+              <Text style={[typography.caption, { color: theme.textMuted }]}>Ready to submit for review</Text>
+            </View>
+            <Button
+              title="Submit for Review"
+              onPress={handleSubmit}
+              loading={submitting}
+              size="md"
+            />
           </View>
-          <Button
-            title="Submit for Review"
-            onPress={handleSubmit}
-            loading={submitting}
-            size="md"
-          />
-        </View>
+        )
+      ) : (
+        offlineItems.length > 0 && (
+          <View style={[styles.bottomBar, { backgroundColor: theme.surface, borderColor: theme.border, paddingBottom: insets.bottom + 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.bodyMed, { color: theme.textPrimary }]}>{offlineItems.length} items</Text>
+              <Text style={[typography.caption, { color: theme.textMuted }]}>Will sync when back online</Text>
+            </View>
+            <Button
+              title="Save Draft"
+              onPress={handleSaveDraft}
+              size="md"
+              icon="cloud-upload-outline"
+            />
+          </View>
+        )
       )}
     </KeyboardAvoidingView>
   );
